@@ -159,6 +159,27 @@ h1 {
     background: #2c3e50;
 }
 
+.btn-install {
+    background: #27ae60;
+    color: white;
+    grid-column: span 4;
+    margin-top: 10px;
+    font-size: 1.3em;
+    padding: 18px;
+    animation: pulse 2s infinite;
+}
+
+.btn-install:hover {
+    background: #229954;
+    animation: none;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
 .btn-navigation {
     background: #9b59b6;
     color: white;
