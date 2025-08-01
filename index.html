@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เครื่องคิดเลขตรรกศาสตร์</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🧮 เครื่องคิดเลขตรรกศาสตร์</h1>
+        
+        <div class="main-container">
+            <div class="calculator">
+                <input type="text" class="display" id="display" placeholder="พิมพ์สูตรตรรกศาสตร์ที่นี่..." />
+                <div class="result-display" id="resultDisplay"></div>
+                
+                <div class="button-grid">
+                    <!-- ตัวแปร -->
+                    <button class="button btn-variable" onclick="addToDisplay('p')">p</button>
+                    <button class="button btn-variable" onclick="addToDisplay('q')">q</button>
+                    <button class="button btn-variable" onclick="addToDisplay('r')">r</button>
+                    <button class="button btn-variable" onclick="addToDisplay('s')">s</button>
+                    
+                    <!-- การดำเนินการ -->
+                    <button class="button btn-operator" onclick="addToDisplay('∧')" title="AND">∧</button>
+                    <button class="button btn-operator" onclick="addToDisplay('∨')" title="OR">∨</button>
+                    <button class="button btn-operator" onclick="addToDisplay('~')" title="NOT">~</button>
+                    <button class="button btn-operator" onclick="addToDisplay('→')" title="IMPLIES">→</button>
+                    
+                    <button class="button btn-operator" onclick="addToDisplay('↔')" title="IFF">↔</button>
+                    <button class="button btn-operator" onclick="addToDisplay('⊕')" title="XOR">⊕</button>
+                    <button class="button btn-bracket" onclick="addToDisplay('(')">(</button>
+                    <button class="button btn-bracket" onclick="addToDisplay(')')">)</button>
+                    
+                    <!-- ฟังก์ชัน -->
+                    <button class="button btn-clear" onclick="clearDisplay()">ล้าง</button>
+                    <button class="button btn-clear" onclick="backspace()">ลบ</button>
+                    <button class="button btn-navigation" onclick="moveCursorLeft()">←</button>
+                    <button class="button btn-navigation" onclick="moveCursorRight()">→</button>
+                    <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
+                </div>
+                
+                <button class="button btn-toggle" onclick="toggleTruthTable()">
+                    <span id="toggleText">เปิดตารางค่าความจริง</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="truth-table" id="truthTable">
+            <h3>ตารางค่าความจริง</h3>
+            <div class="table-container">
+                <table id="truthTableContent">
+                    <thead><tr id="tableHeader"></tr></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
