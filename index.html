@@ -49,6 +49,10 @@
                 <button class="button btn-toggle" onclick="toggleTruthTable()">
                     <span id="toggleText">เปิดตารางค่าความจริง</span>
                 </button>
+                
+                <button class="button btn-install" id="installButton" onclick="installApp()" style="display: none;">
+                    📱 ติดตั้งแอพ
+                </button>
             </div>
         </div>
         
@@ -65,11 +69,48 @@
 
     <script src="script.js"></script>
     <script>
+    let deferredPrompt;
+    
+    // Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
         navigator.serviceWorker.register('sw.js');
       });
     }
+    
+    // PWA Install Handler
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      // แสดงปุ่มติดตั้ง
+      const installButton = document.getElementById('installButton');
+      installButton.style.display = 'block';
+    });
+    
+    // ฟังก์ชันติดตั้งแอพ
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+            document.getElementById('installButton').style.display = 'none';
+          } else {
+            console.log('User dismissed the install prompt');
+          }
+          deferredPrompt = null;
+        });
+      } else {
+        // สำหรับเบราว์เซอร์ที่ไม่รองรับ beforeinstallprompt
+        alert('กรุณาเพิ่มเว็บไซต์นี้ไปยังหน้าจอหลักผ่านเมนูของเบราว์เซอร์');
+      }
+    }
+    
+    // ซ่อนปุ่มเมื่อติดตั้งแล้ว
+    window.addEventListener('appinstalled', (evt) => {
+      document.getElementById('installButton').style.display = 'none';
+    });
     </script>
 </body>
 </html>
