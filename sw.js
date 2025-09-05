@@ -1,5 +1,5 @@
 // เปลี่ยนเลขเวอร์ชันทุกครั้งที่อัปเดตไฟล์ เพื่อบังคับล้างแคชเก่า
-const CACHE_STATIC = 'lc-static-v1.0.3';
+const CACHE_STATIC = 'lc-static-v1.0.4';
 
 const PRECACHE_URLS = [
   './',
@@ -66,5 +66,6 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
 
 
