@@ -1,116 +1,60 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เครื่องคิดเลขตรรกศาสตร์</title>
-    <link rel="stylesheet" href="./styles.css">
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#764ba2">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="LogicCalc">
-</head>
-<body>
-    <div class="container">
-        <h1>🧮 เครื่องคิดเลขตรรกศาสตร์</h1>
-        
-        <div class="main-container">
-            <div class="calculator">
-                <input type="text" class="display" id="display" placeholder="พิมพ์สูตรตรรกศาสตร์ที่นี่..." />
-                <div class="result-display" id="resultDisplay"></div>
-                
-                <div class="button-grid">
-                    <!-- ตัวแปร -->
-                    <button class="button btn-variable" onclick="addToDisplay('p')">p</button>
-                    <button class="button btn-variable" onclick="addToDisplay('q')">q</button>
-                    <button class="button btn-variable" onclick="addToDisplay('r')">r</button>
-                    <button class="button btn-variable" onclick="addToDisplay('s')">s</button>
-                    
-                    <!-- การดำเนินการ -->
-                    <button class="button btn-operator" onclick="addToDisplay('∧')" title="AND">∧</button>
-                    <button class="button btn-operator" onclick="addToDisplay('∨')" title="OR">∨</button>
-                    <button class="button btn-operator" onclick="addToDisplay('~')" title="NOT">~</button>
-                    <button class="button btn-operator" onclick="addToDisplay('→')" title="IMPLIES">→</button>
-                    
-                    <button class="button btn-operator" onclick="addToDisplay('↔')" title="IFF">↔</button>
-                    <button class="button btn-operator" onclick="addToDisplay('⊕')" title="XOR">⊕</button>
-                    <button class="button btn-bracket" onclick="addToDisplay('(')">(</button>
-                    <button class="button btn-bracket" onclick="addToDisplay(')')">)</button>
-                    
-                    <!-- ฟังก์ชัน -->
-                    <button class="button btn-clear" onclick="clearDisplay()">ล้าง</button>
-                    <button class="button btn-clear" onclick="backspace()">ลบ</button>
-                    <button class="button btn-navigation" onclick="moveCursorLeft()">←</button>
-                    <button class="button btn-navigation" onclick="moveCursorRight()">→</button>
-                    <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
-                </div>
-                
-                <button class="button btn-toggle" onclick="toggleTruthTable()">
-                    <span id="toggleText">เปิดตารางค่าความจริง</span>
-                </button>
-                
-                <button class="button btn-install" id="installButton" onclick="installApp()" style="display: none;">
-                    📱 ติดตั้งแอพ
-                </button>
-            </div>
-        </div>
-        
-        <div class="truth-table" id="truthTable">
-            <h3>ตารางค่าความจริง</h3>
-            <div class="table-container">
-                <table id="truthTableContent">
-                    <thead><tr id="tableHeader"></tr></thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+// เปลี่ยนเลขเวอร์ชันทุกครั้งที่อัปเดตไฟล์ เพื่อบังคับล้างแคชเก่า
+const CACHE_STATIC = 'lc-static-v1.0.0';
 
-    <!-- โหลดสคริปต์หลักแบบ defer ให้ DOM พร้อมก่อน -->
-    <script src="./script.js" defer></script>
+const PRECACHE_URLS = [
+  './',
+  './index.html',
+  './styles.css',
+  './script.js',
+  './manifest.json'
+];
 
-    <script>
-    let deferredPrompt;
-    
-    // Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js'); // ใช้พาธแบบ relative
-      });
-    }
-    
-    // PWA Install Handler
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      // แสดงปุ่มติดตั้ง
-      const installButton = document.getElementById('installButton');
-      installButton.style.display = 'block';
-    });
-    
-    // ฟังก์ชันติดตั้งแอพ
-    function installApp() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-          if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the install prompt');
-            document.getElementById('installButton').style.display = 'none';
-          } else {
-            console.log('User dismissed the install prompt');
-          }
-          deferredPrompt = null;
-        });
-      } else {
-        alert('กรุณาเพิ่มเว็บไซต์นี้ไปยังหน้าจอหลักผ่านเมนูของเบราว์เซอร์');
-      }
-    }
-    
-    // ซ่อนปุ่มเมื่อติดตั้งแล้ว
-    window.addEventListener('appinstalled', (evt) => {
-      document.getElementById('installButton').style.display = 'none';
-    });
-    </script>
-</body>
-</html>
+// ติดตั้ง: แคชไฟล์พื้นฐาน
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_STATIC).then(cache => cache.addAll(PRECACHE_URLS))
+  );
+});
+
+// เปิดใช้งาน: ลบแคชเก่า และยึดควบคุมทันที
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => key !== CACHE_STATIC && caches.delete(key)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+// กลยุทธ์หลัก:
+// - HTML = network-first (จะได้เห็นเวอร์ชันล่าสุดไว)
+// - ไฟล์คงที่ (CSS/JS/รูป) = stale-while-revalidate (โหลดเร็ว+อัปเดตตามหลัง)
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const accept = req.headers.get('accept') || '';
+
+  // จัดการหน้า HTML
+  if (req.mode === 'navigate' || accept.includes('text/html')) {
+    event.respondWith(
+      fetch(req)
+        .then(res => {
+          const resClone = res.clone();
+          caches.open(CACHE_STATIC).then(cache => cache.put(req, resClone));
+          return res;
+        })
+        .catch(() => caches.match(req).then(c => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // จัดการไฟล์คงที่ (CSS/JS/รูป)
+  event.respondWith(
+    caches.match(req).then(cacheRes => {
+      const fetchPromise = fetch(req).then(networkRes => {
+        caches.open(CACHE_STATIC).then(cache => cache.put(req, networkRes.clone()));
+        return networkRes;
+      }).catch(() => cacheRes);
+      return cacheRes || fetchPromise;
+    })
+  );
+});
