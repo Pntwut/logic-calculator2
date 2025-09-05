@@ -1,24 +1,24 @@
 /* =========================
-   Logic Calculator – UI แบบในรูป
+   Logic Calculator – Final UI
    ========================= */
 
-/* สีหลัก */
+/* โทนสีหลัก */
 :root{
-  --bg1: #6b5bff;       /* ไล่ม่วงด้านบน */
-  --bg2: #a56bff;       /* ไล่ม่วงด้านล่าง */
+  --bg1: #6b5bff;
+  --bg2: #a56bff;
   --page: #eef1ff;
 
   --card: #ffffff;
   --border: #e5e7eb;
   --shadow: 0 18px 50px rgba(15,23,42,.08);
 
-  --blue:   #3498db;    /* ปุ่มตัวแปร */
-  --red:    #e74c3c;    /* ปุ่ม operator */
-  --orange: #f39c12;    /* วงเล็บ / ล้าง */
-  --purple: #8e44ad;    /* ปุ่มลูกศร */
-  --green:  #2ecc71;    /* ปุ่ม = */
+  --blue:   #3498db;   /* ปุ่มตัวแปร */
+  --red:    #e74c3c;   /* ปุ่ม operator */
+  --orange: #f39c12;   /* วงเล็บ/ล้าง */
+  --purple: #8e44ad;   /* ปุ่มลูกศร */
+  --green:  #2ecc71;   /* ปุ่ม = */
 
-  --header: #2c3e50;    /* หัวตาราง */
+  --header: #2c3e50;   /* หัวตาราง */
   --muted:  #64748b;
 
   --true:   #16a34a;
@@ -83,9 +83,7 @@ h1{
   display:none;
 }
 .result-display.show{ display:block }
-.result-display .error{
-  color:#e74c3c; font-weight:700;
-}
+.result-display .error{ color:#e74c3c; font-weight:700 }
 
 /* กริดปุ่ม */
 .button-grid{
@@ -111,7 +109,7 @@ h1{
   transition: transform .05s ease, filter .12s ease, box-shadow .12s ease;
 }
 .button:active{ transform: translateY(1px) }
-.button:focus-visible{ outline:2px solid #3b82f6; outline-offset:2px; }
+.button:focus-visible{ outline:2px solid #3b82f6; outline-offset:2px }
 
 /* สีปุ่มตามหมวด */
 .btn-variable{ background: var(--blue) }
@@ -144,7 +142,7 @@ h1{
   background:#0ea5e9; color:#fff;
 }
 
-/* ===== ตารางค่าความจริง ===== */
+/* ===== ตารางค่าความจริง – สไตล์ใหม่ ===== */
 .truth-table{ margin-top:18px }
 .truth-table h3{
   text-align:center; margin: 0 0 10px; color:#1f2937;
