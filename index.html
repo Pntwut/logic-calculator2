@@ -17,46 +17,56 @@
   <meta name="apple-mobile-web-app-title" content="LogicCalc" />
 </head>
 <body>
+  <noscript>จำเป็นต้องเปิดใช้งาน JavaScript เพื่อใช้งานเครื่องคิดเลขนี้</noscript>
+
   <div class="container">
     <h1>🧮 เครื่องคิดเลขตรรกศาสตร์</h1>
 
     <div class="main-container">
       <div class="calculator" role="region" aria-label="เครื่องคิดเลขตรรกศาสตร์">
         <label for="display" class="sr-only">กรอกนิพจน์ตรรกศาสตร์</label>
-        <input type="text" class="display" id="display" placeholder="พิมพ์สูตรตรรกศาสตร์ที่นี่..." />
+        <input
+          type="text"
+          class="display"
+          id="display"
+          placeholder="พิมพ์สูตรตรรกศาสตร์ที่นี่..."
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="off"
+        />
         <div class="result-display" id="resultDisplay" aria-live="polite"></div>
 
         <div class="button-grid" role="group" aria-label="ปุ่มช่วยพิมพ์">
           <!-- ตัวแปร -->
-          <button class="button btn-variable" onclick="addToDisplay('p')">p</button>
-          <button class="button btn-variable" onclick="addToDisplay('q')">q</button>
-          <button class="button btn-variable" onclick="addToDisplay('r')">r</button>
-          <button class="button btn-variable" onclick="addToDisplay('s')">s</button>
+          <button type="button" class="button btn-variable" onclick="addToDisplay('p')" aria-label="เพิ่มตัวแปร p">p</button>
+          <button type="button" class="button btn-variable" onclick="addToDisplay('q')" aria-label="เพิ่มตัวแปร q">q</button>
+          <button type="button" class="button btn-variable" onclick="addToDisplay('r')" aria-label="เพิ่มตัวแปร r">r</button>
+          <button type="button" class="button btn-variable" onclick="addToDisplay('s')" aria-label="เพิ่มตัวแปร s">s</button>
 
           <!-- การดำเนินการ -->
-          <button class="button btn-operator" onclick="addToDisplay('∧')" title="AND">∧</button>
-          <button class="button btn-operator" onclick="addToDisplay('∨')" title="OR">∨</button>
-          <button class="button btn-operator" onclick="addToDisplay('~')" title="NOT">~</button>
-          <button class="button btn-operator" onclick="addToDisplay('→')" title="IMPLIES">→</button>
+          <button type="button" class="button btn-operator" onclick="addToDisplay('∧')" aria-label="AND">∧</button>
+          <button type="button" class="button btn-operator" onclick="addToDisplay('∨')" aria-label="OR">∨</button>
+          <button type="button" class="button btn-operator" onclick="addToDisplay('~')" aria-label="NOT">~</button>
+          <button type="button" class="button btn-operator" onclick="addToDisplay('→')" aria-label="IMPLIES">→</button>
 
-          <button class="button btn-operator" onclick="addToDisplay('↔')" title="IFF">↔</button>
-          <button class="button btn-operator" onclick="addToDisplay('⊕')" title="XOR">⊕</button>
-          <button class="button btn-bracket" onclick="addToDisplay('(')">(</button>
-          <button class="button btn-bracket" onclick="addToDisplay(')')">)</button>
+          <button type="button" class="button btn-operator" onclick="addToDisplay('↔')" aria-label="IF AND ONLY IF">↔</button>
+          <button type="button" class="button btn-operator" onclick="addToDisplay('⊕')" aria-label="XOR">⊕</button>
+          <button type="button" class="button btn-bracket"  onclick="addToDisplay('(')" aria-label="วงเล็บเปิด">(</button>
+          <button type="button" class="button btn-bracket"  onclick="addToDisplay(')')" aria-label="วงเล็บปิด">)</button>
 
           <!-- ฟังก์ชัน -->
-          <button class="button btn-clear" onclick="clearDisplay()">ล้าง</button>
-          <button class="button btn-clear" onclick="backspace()">ลบ</button>
-          <button class="button btn-navigation" onclick="moveCursorLeft()">←</button>
-          <button class="button btn-navigation" onclick="moveCursorRight()">→</button>
-          <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
+          <button type="button" class="button btn-clear"      onclick="clearDisplay()"       aria-label="ล้างอินพุต">ล้าง</button>
+          <button type="button" class="button btn-clear"      onclick="backspace()"          aria-label="ลบตัวก่อนหน้า">ลบ</button>
+          <button type="button" class="button btn-navigation" onclick="moveCursorLeft()"     aria-label="เลื่อนเคอร์เซอร์ซ้าย">←</button>
+          <button type="button" class="button btn-navigation" onclick="moveCursorRight()"    aria-label="เลื่อนเคอร์เซอร์ขวา">→</button>
+          <button type="button" class="button btn-equals"     onclick="evaluateExpression()" aria-label="คำนวณ">= แสดงผล</button>
         </div>
 
-        <button class="button btn-toggle" onclick="toggleTruthTable()">
+        <button type="button" class="button btn-toggle" onclick="toggleTruthTable()">
           <span id="toggleText">เปิดตารางค่าความจริง</span>
         </button>
 
-        <button class="button btn-install" id="installButton" onclick="installApp()" style="display:none">
+        <button type="button" class="button btn-install" id="installButton" onclick="installApp()" style="display:none">
           📱 ติดตั้งแอพ
         </button>
       </div>
@@ -76,7 +86,7 @@
   <!-- แบนเนอร์แจ้งเตือนเวอร์ชันใหม่ -->
   <div id="updateBanner" class="update-banner" hidden>
     พบเวอร์ชันใหม่ของแอพ
-    <button id="refreshBtn" class="button">อัปเดตตอนนี้</button>
+    <button type="button" id="refreshBtn" class="button">อัปเดตตอนนี้</button>
   </div>
 
   <!-- สคริปต์หลัก -->
