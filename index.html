@@ -11,10 +11,19 @@
   <link rel="stylesheet" href="./styles.css" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="icon" href="./icon-192.png" type="image/png" />
+
+  <!-- Theming -->
   <meta name="theme-color" content="#764ba2" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="LogicCalc" />
+
+  <!-- Open Graph (แชร์ลิงก์สวยขึ้น) -->
+  <meta property="og:title" content="เครื่องคิดเลขตรรกศาสตร์">
+  <meta property="og:description" content="คำนวณนิพจน์ตรรกศาสตร์ + ตารางค่าความจริง พร้อมติดตั้งเป็น PWA">
+  <meta property="og:image" content="https://pntwut.github.io/logic-calculator2/icon-512.png">
+  <meta property="og:type" content="website">
 </head>
 <body>
   <noscript>จำเป็นต้องเปิดใช้งาน JavaScript เพื่อใช้งานเครื่องคิดเลขนี้</noscript>
@@ -92,105 +101,87 @@
   <!-- สคริปต์หลัก -->
   <script src="./script.js" defer></script>
 
-  <!-- PWA + Update banner logic -->
+  <!-- PWA + Update banner logic (โชว์เฉพาะเมื่อมี SW ใหม่รอจริง) -->
   <script>
-    let deferredPrompt;
+  let deferredPrompt;
 
-    // ลงทะเบียน Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js');
-      });
+  // Register SW
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      await navigator.serviceWorker.register('./sw.js');
+    });
+  }
+
+  // PWA install button
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('installButton');
+    if (btn) btn.style.display = 'block';
+  });
+  function installApp() {
+    if (!deferredPrompt) {
+      alert('กรุณาเพิ่มเว็บไซต์นี้ไปยังหน้าจอหลักผ่านเมนูของเบราว์เซอร์');
+      return;
     }
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.finally(() => (deferredPrompt = null));
+  }
+  window.addEventListener('appinstalled', () => {
+    const btn = document.getElementById('installButton');
+    if (btn) btn.style.display = 'none';
+  });
 
-    // แสดงปุ่มติดตั้งแอพ (PWA)
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      const installButton = document.getElementById('installButton');
-      installButton.style.display = 'block';
+  // ===== Update banner: show only when reg.waiting exists =====
+  const banner = document.getElementById('updateBanner');
+  const refreshBtn = document.getElementById('refreshBtn');
+
+  function showBanner() { if (banner && banner.hidden) banner.hidden = false; }
+  function hideBanner() { if (banner && !banner.hidden) banner.hidden = true; }
+
+  // เมื่อ SW ใหม่เข้ามาคุมหน้า → ซ่อนแบนเนอร์แล้วรีโหลด
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      hideBanner();
+      setTimeout(() => location.reload(), 50);
     });
 
-    function installApp() {
-      if (!deferredPrompt) {
-        alert('กรุณาเพิ่มเว็บไซต์นี้ไปยังหน้าจอหลักผ่านเมนูของเบราว์เซอร์');
-        return;
-      }
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choice) => {
-        if (choice.outcome === 'accepted') {
-          document.getElementById('installButton').style.display = 'none';
-        }
-        deferredPrompt = null;
-      });
-    }
+    window.addEventListener('load', async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) return;
 
-    window.addEventListener('appinstalled', () => {
-      const btn = document.getElementById('installButton');
-      if (btn) btn.style.display = 'none';
-    });
+      // มี SW ตัวใหม่รออยู่จริง → แบนเนอร์โผล่
+      if (reg.waiting) showBanner();
 
-    // ===== แจ้งเตือนเวอร์ชันใหม่ + ปุ่มอัปเดต =====
-    if ('serviceWorker' in navigator) {
-      // เมื่อ SW ใหม่ activate และเริ่มคุมหน้า → ซ่อนแบนเนอร์ & รีเฟรชอัตโนมัติ
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        const banner = document.getElementById('updateBanner');
-        if (banner) banner.hidden = true;
-        window.location.reload();
-      });
-
-      window.addEventListener('load', async () => {
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (!reg) return;
-
-        const banner = document.getElementById('updateBanner');
-        const btn = document.getElementById('refreshBtn');
-
-        const showBanner = () => { if (banner && banner.hidden) banner.hidden = false; };
-
-        // มี SW ใหม่รออยู่แล้ว → โชว์แบนเนอร์
-        if (reg.waiting) showBanner();
-
-        // กำลังติดตั้ง → รอจน installed แล้วค่อยโชว์
-        reg.addEventListener('updatefound', () => {
-          const newSW = reg.installing;
-          if (!newSW) return;
-          newSW.addEventListener('statechange', () => {
-            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-              showBanner();
-            }
-          });
+      // ถ้ามีการเจอตัวใหม่ระหว่างใช้งาน
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            showBanner();
+          }
         });
-
-        // ปุ่ม "อัปเดตตอนนี้"
-        if (btn) {
-          btn.addEventListener('click', async () => {
-            const latestReg = await navigator.serviceWorker.getRegistration();
-            if (!latestReg) return;
-
-            // 1) มี waiting → ข้าม waiting ทันที (SW จะ activate แล้ว controllerchange จะรีเฟรชเอง)
-            if (latestReg.waiting) {
-              latestReg.waiting.postMessage({ type: 'SKIP_WAITING' });
-              return;
-            }
-
-            // 2) กำลัง installing → รอให้ installed แล้วค่อยสั่ง
-            if (latestReg.installing) {
-              const sw = latestReg.installing;
-              sw.addEventListener('statechange', () => {
-                if (sw.state === 'installed' && latestReg.waiting) {
-                  latestReg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                }
-              });
-              return;
-            }
-
-            // 3) ไม่มีตัวใหม่ → ขออัปเดตเผื่อมีไฟล์ใหม่
-            await latestReg.update();
-          });
-        }
       });
-    }
+
+      // ปุ่ม "อัปเดตตอนนี้"
+      if (refreshBtn) {
+        refreshBtn.onclick = async () => {
+          const latest = await navigator.serviceWorker.getRegistration();
+          if (!latest) return;
+
+          // มี waiting จริง → สั่งข้ามคิว
+          if (latest.waiting) {
+            latest.waiting.postMessage({ type: 'SKIP_WAITING' });
+            return;
+          }
+
+          // ไม่มี waiting (เช่น active ไปแล้ว) → รีโหลดเฉย ๆ
+          location.reload();
+        };
+      }
+    });
+  }
   </script>
 </body>
 </html>
