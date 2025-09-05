@@ -1,35 +1,60 @@
-const CACHE_NAME = 'logic-cache-v2'; // เปลี่ยนเลขนี้ทุกครั้งที่อัปเดตไฟล์
-const urlsToCache = [
+// เปลี่ยนเลขเวอร์ชันทุกครั้งที่อัปเดตไฟล์ เพื่อบังคับล้างแคชเก่า
+const CACHE_STATIC = 'lc-static-v1.0.0';
+
+const PRECACHE_URLS = [
   './',
   './index.html',
   './styles.css',
-  './script.js'
+  './script.js',
+  './manifest.json'
 ];
 
-// ติดตั้ง Service Worker และเก็บไฟล์ในแคช
+// ติดตั้ง: แคชไฟล์พื้นฐาน
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
-    })
+    caches.open(CACHE_STATIC).then(cache => cache.addAll(PRECACHE_URLS))
   );
 });
 
-// ดัก fetch ให้โหลดจากแคชก่อน
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
-  );
-});
-
-// ลบแคชเก่าที่ไม่ใช้แล้ว
+// เปิดใช้งาน: ลบแคชเก่า และยึดควบคุมทันที
 self.addEventListener('activate', (event) => {
-  const keep = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((key) => !keep.includes(key) && caches.delete(key)))
-    )
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => key !== CACHE_STATIC && caches.delete(key)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+// กลยุทธ์หลัก:
+// - HTML = network-first (จะได้เห็นเวอร์ชันล่าสุดไว)
+// - ไฟล์คงที่ (CSS/JS/รูป) = stale-while-revalidate (โหลดเร็ว+อัปเดตตามหลัง)
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const accept = req.headers.get('accept') || '';
+
+  // จัดการหน้า HTML
+  if (req.mode === 'navigate' || accept.includes('text/html')) {
+    event.respondWith(
+      fetch(req)
+        .then(res => {
+          const resClone = res.clone();
+          caches.open(CACHE_STATIC).then(cache => cache.put(req, resClone));
+          return res;
+        })
+        .catch(() => caches.match(req).then(c => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // จัดการไฟล์คงที่ (CSS/JS/รูป)
+  event.respondWith(
+    caches.match(req).then(cacheRes => {
+      const fetchPromise = fetch(req).then(networkRes => {
+        caches.open(CACHE_STATIC).then(cache => cache.put(req, networkRes.clone()));
+        return networkRes;
+      }).catch(() => cacheRes);
+      return cacheRes || fetchPromise;
+    })
   );
 });
