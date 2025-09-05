@@ -93,3 +93,33 @@ button:focus-visible,
   h1 { font-size: 1.25rem; }
 }
 
+/* แบนเนอร์อัปเดตเวอร์ชัน */
+.update-banner {
+  position: sticky;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  margin: 12px auto;
+  max-width: 720px;
+  background: #0ea5e9;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  z-index: 999;
+}
+.update-banner .button {
+  background: #fff;
+  color: #0ea5e9;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.update-banner .button:hover { opacity: 0.95; }
+
