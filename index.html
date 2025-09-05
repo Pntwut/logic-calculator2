@@ -1,124 +1,128 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>เครื่องคิดเลขตรรกศาสตร์</title>
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="manifest" href="./manifest.json" />
-    <meta name="theme-color" content="#764ba2" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="LogicCalc" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>เครื่องคิดเลขตรรกศาสตร์</title>
+  <meta name="description" content="เครื่องคิดเลขตรรกศาสตร์ พร้อมตารางค่าความจริง และรองรับติดตั้งเป็นแอป (PWA)" />
+
+  <!-- Styles & PWA -->
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <meta name="theme-color" content="#764ba2" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="LogicCalc" />
 </head>
 <body>
-    <div class="container">
-        <h1>🧮 เครื่องคิดเลขตรรกศาสตร์</h1>
+  <div class="container">
+    <h1>🧮 เครื่องคิดเลขตรรกศาสตร์</h1>
 
-        <div class="main-container">
-            <div class="calculator">
-                <input type="text" class="display" id="display" placeholder="พิมพ์สูตรตรรกศาสตร์ที่นี่..." />
-                <div class="result-display" id="resultDisplay"></div>
+    <div class="main-container">
+      <div class="calculator" role="region" aria-label="เครื่องคิดเลขตรรกศาสตร์">
+        <label for="display" class="sr-only">กรอกนิพจน์ตรรกศาสตร์</label>
+        <input type="text" class="display" id="display" placeholder="พิมพ์สูตรตรรกศาสตร์ที่นี่..." />
+        <div class="result-display" id="resultDisplay" aria-live="polite"></div>
 
-                <div class="button-grid">
-                    <!-- ตัวแปร -->
-                    <button class="button btn-variable" onclick="addToDisplay('p')">p</button>
-                    <button class="button btn-variable" onclick="addToDisplay('q')">q</button>
-                    <button class="button btn-variable" onclick="addToDisplay('r')">r</button>
-                    <button class="button btn-variable" onclick="addToDisplay('s')">s</button>
+        <div class="button-grid" role="group" aria-label="ปุ่มช่วยพิมพ์">
+          <!-- ตัวแปร -->
+          <button class="button btn-variable" onclick="addToDisplay('p')" aria-label="เพิ่มตัวแปร p">p</button>
+          <button class="button btn-variable" onclick="addToDisplay('q')" aria-label="เพิ่มตัวแปร q">q</button>
+          <button class="button btn-variable" onclick="addToDisplay('r')" aria-label="เพิ่มตัวแปร r">r</button>
+          <button class="button btn-variable" onclick="addToDisplay('s')" aria-label="เพิ่มตัวแปร s">s</button>
 
-                    <!-- การดำเนินการ -->
-                    <button class="button btn-operator" onclick="addToDisplay('∧')" title="AND">∧</button>
-                    <button class="button btn-operator" onclick="addToDisplay('∨')" title="OR">∨</button>
-                    <button class="button btn-operator" onclick="addToDisplay('~')" title="NOT">~</button>
-                    <button class="button btn-operator" onclick="addToDisplay('→')" title="IMPLIES">→</button>
+          <!-- การดำเนินการ -->
+          <button class="button btn-operator" onclick="addToDisplay('∧')" title="AND" aria-label="AND">∧</button>
+          <button class="button btn-operator" onclick="addToDisplay('∨')" title="OR" aria-label="OR">∨</button>
+          <button class="button btn-operator" onclick="addToDisplay('~')" title="NOT" aria-label="NOT">~</button>
+          <button class="button btn-operator" onclick="addToDisplay('→')" title="IMPLIES" aria-label="IMPLIES">→</button>
 
-                    <button class="button btn-operator" onclick="addToDisplay('↔')" title="IFF">↔</button>
-                    <button class="button btn-operator" onclick="addToDisplay('⊕')" title="XOR">⊕</button>
-                    <button class="button btn-bracket" onclick="addToDisplay('(')">(</button>
-                    <button class="button btn-bracket" onclick="addToDisplay(')')">)</button>
+          <button class="button btn-operator" onclick="addToDisplay('↔')" title="IFF" aria-label="IFF">↔</button>
+          <button class="button btn-operator" onclick="addToDisplay('⊕')" title="XOR" aria-label="XOR">⊕</button>
+          <button class="button btn-bracket"  onclick="addToDisplay('(')" aria-label="วงเล็บเปิด">(</button>
+          <button class="button btn-bracket"  onclick="addToDisplay(')')" aria-label="วงเล็บปิด">)</button>
 
-                    <!-- ฟังก์ชัน -->
-                    <button class="button btn-clear" onclick="clearDisplay()">ล้าง</button>
-                    <button class="button btn-clear" onclick="backspace()">ลบ</button>
-                    <button class="button btn-navigation" onclick="moveCursorLeft()">←</button>
-                    <button class="button btn-navigation" onclick="moveCursorRight()">→</button>
-                    <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
-                </div>
-
-                <button class="button btn-toggle" onclick="toggleTruthTable()">
-                    <span id="toggleText">เปิดตารางค่าความจริง</span>
-                </button>
-
-                <button class="button btn-install" id="installButton" onclick="installApp()" style="display: none;">
-                    📱 ติดตั้งแอพ
-                </button>
-            </div>
+          <!-- ฟังก์ชัน -->
+          <button class="button btn-clear"      onclick="clearDisplay()"        aria-label="ล้างอินพุต">ล้าง</button>
+          <button class="button btn-clear"      onclick="backspace()"           aria-label="ลบตัวก่อนหน้า">ลบ</button>
+          <button class="button btn-navigation" onclick="moveCursorLeft()"      aria-label="เลื่อนเคอร์เซอร์ซ้าย">←</button>
+          <button class="button btn-navigation" onclick="moveCursorRight()"     aria-label="เลื่อนเคอร์เซอร์ขวา">→</button>
+          <button class="button btn-equals"     onclick="evaluateExpression()"  aria-label="คำนวณ">= แสดงผล</button>
         </div>
 
-        <div class="truth-table" id="truthTable">
-            <h3>ตารางค่าความจริง</h3>
-            <div class="table-container">
-                <table id="truthTableContent">
-                    <thead><tr id="tableHeader"></tr></thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
-        </div>
+        <button class="button btn-toggle" onclick="toggleTruthTable()">
+          <span id="toggleText">เปิดตารางค่าความจริง</span>
+        </button>
+
+        <button class="button btn-install" id="installButton" onclick="installApp()" style="display:none">
+          📱 ติดตั้งแอพ
+        </button>
+      </div>
     </div>
 
-    <!-- แบนเนอร์แจ้งเตือนเวอร์ชันใหม่ -->
-    <div id="updateBanner" class="update-banner" hidden>
-      พบเวอร์ชันใหม่ของแอพ
-      <button id="refreshBtn" class="button">อัปเดตตอนนี้</button>
+    <div class="truth-table" id="truthTable" aria-live="polite">
+      <h3>ตารางค่าความจริง</h3>
+      <div class="table-container">
+        <table id="truthTableContent">
+          <thead><tr id="tableHeader"></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
     </div>
+  </div>
 
-    <!-- โหลดสคริปต์หลักแบบ defer ให้ DOM พร้อมก่อน -->
-    <script src="./script.js" defer></script>
+  <!-- แบนเนอร์แจ้งเตือนเวอร์ชันใหม่ -->
+  <div id="updateBanner" class="update-banner" hidden>
+    พบเวอร์ชันใหม่ของแอพ
+    <button id="refreshBtn" class="button">อัปเดตตอนนี้</button>
+  </div>
 
-    <script>
+  <!-- สคริปต์หลัก -->
+  <script src="./script.js" defer></script>
+
+  <!-- PWA + Update banner logic -->
+  <script>
     let deferredPrompt;
 
-    // Service Worker: register
+    // ลงทะเบียน Service Worker
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js'); // ใช้พาธแบบ relative
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js');
       });
     }
 
-    // PWA Install Handler
+    // แสดงปุ่มติดตั้งแอพ (PWA)
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      // แสดงปุ่มติดตั้ง
       const installButton = document.getElementById('installButton');
       installButton.style.display = 'block';
     });
 
     function installApp() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-          if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the install prompt');
-            document.getElementById('installButton').style.display = 'none';
-          } else {
-            console.log('User dismissed the install prompt');
-          }
-          deferredPrompt = null;
-        });
-      } else {
+      if (!deferredPrompt) {
         alert('กรุณาเพิ่มเว็บไซต์นี้ไปยังหน้าจอหลักผ่านเมนูของเบราว์เซอร์');
+        return;
       }
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choice) => {
+        if (choice.outcome === 'accepted') {
+          document.getElementById('installButton').style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
     }
 
     window.addEventListener('appinstalled', () => {
-      document.getElementById('installButton').style.display = 'none';
+      const btn = document.getElementById('installButton');
+      if (btn) btn.style.display = 'none';
     });
 
-    // ====== ส่วนแจ้งเตือน "มีเวอร์ชันใหม่" + ปุ่มอัปเดต ======
+    // ===== แจ้งเตือนเวอร์ชันใหม่ + ปุ่มอัปเดต =====
     if ('serviceWorker' in navigator) {
-      // เมื่อ SW ใหม่เข้ามาคุมหน้า → รีเฟรชอัตโนมัติ
+      // เมื่อ SW ใหม่ activate และเริ่มคุมหน้า → รีเฟรชอัตโนมัติ
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         window.location.reload();
       });
@@ -130,36 +134,51 @@
         const banner = document.getElementById('updateBanner');
         const btn = document.getElementById('refreshBtn');
 
-        function showBanner() {
-          if (banner) banner.hidden = false;
-        }
+        const showBanner = () => { if (banner && banner.hidden) banner.hidden = false; };
 
-        // ถ้ามีเวอร์ชันใหม่รออยู่แล้ว
+        // ถ้ามีตัวใหม่ waiting อยู่แล้ว → โชว์แบนเนอร์
         if (reg.waiting) showBanner();
 
-        // จับสถานะ SW ใหม่กำลังติดตั้ง → รอจน installed แล้วโชว์แบนเนอร์
+        // จับตัวใหม่ที่กำลังติดตั้ง → รอจน installed แล้วโชว์
         reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          const newSW = reg.installing;
+          if (!newSW) return;
+          newSW.addEventListener('statechange', () => {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
               showBanner();
             }
           });
         });
 
-        // ปุ่ม "อัปเดตตอนนี้" → สั่ง SW ใหม่ข้าม waiting
+        // ปุ่ม "อัปเดตตอนนี้"
         if (btn) {
-          btn.addEventListener('click', () => {
-            if (reg.waiting) {
-              reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-            } else {
-              reg.update(); // เผื่อไม่มี waiting
+          btn.addEventListener('click', async () => {
+            const latestReg = await navigator.serviceWorker.getRegistration();
+            if (!latestReg) return;
+
+            // 1) มี waiting → ข้าม waiting ทันที
+            if (latestReg.waiting) {
+              latestReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              return; // จะรีเฟรชจาก controllerchange
             }
+
+            // 2) กำลัง installing → รอให้ติดตั้งเสร็จแล้วค่อยข้าม waiting
+            if (latestReg.installing) {
+              const sw = latestReg.installing;
+              sw.addEventListener('statechange', () => {
+                if (sw.state === 'installed' && latestReg.waiting) {
+                  latestReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+              return;
+            }
+
+            // 3) ไม่มีตัวใหม่ → ขออัปเดตตรวจไฟล์ล่าสุด
+            await latestReg.update();
           });
         }
       });
     }
-    </script>
+  </script>
 </body>
 </html>
