@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เครื่องคิดเลขตรรกศาสตร์</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#764ba2">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -67,14 +67,16 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- โหลดสคริปต์หลักแบบ defer ให้ DOM พร้อมก่อน -->
+    <script src="./script.js" defer></script>
+
     <script>
     let deferredPrompt;
     
     // Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js');
+        navigator.serviceWorker.register('./sw.js'); // ใช้พาธแบบ relative
       });
     }
     
@@ -82,7 +84,6 @@
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      
       // แสดงปุ่มติดตั้ง
       const installButton = document.getElementById('installButton');
       installButton.style.display = 'block';
@@ -102,7 +103,6 @@
           deferredPrompt = null;
         });
       } else {
-        // สำหรับเบราว์เซอร์ที่ไม่รองรับ beforeinstallprompt
         alert('กรุณาเพิ่มเว็บไซต์นี้ไปยังหน้าจอหลักผ่านเมนูของเบราว์เซอร์');
       }
     }
