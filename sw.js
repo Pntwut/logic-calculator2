@@ -1,12 +1,5 @@
 // เปลี่ยนเลขเวอร์ชันทุกครั้งที่อัปเดตไฟล์ เพื่อบังคับล้างแคชเก่า
-const CACHE_STATIC = 'lc-static-v1.0.0';
-
-// รับคำสั่งจากหน้าเว็บให้ SW ข้าม waiting และอัปเดตทันที
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
+const CACHE_STATIC = 'lc-static-v1.0.1';
 
 const PRECACHE_URLS = [
   './',
@@ -16,7 +9,15 @@ const PRECACHE_URLS = [
   './manifest.json'
 ];
 
-// ติดตั้ง: แคชไฟล์พื้นฐาน
+// ================== ฟัง message จากหน้าเว็บ ==================
+// ใช้กับปุ่ม "อัปเดตตอนนี้" → ให้ service worker ใหม่ข้าม waiting
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// ================== Install ==================
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
@@ -24,7 +25,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// เปิดใช้งาน: ลบแคชเก่า และยึดควบคุมทันที
+// ================== Activate ==================
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -33,9 +34,9 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// กลยุทธ์หลัก:
-// - HTML = network-first (จะได้เห็นเวอร์ชันล่าสุดไว)
-// - ไฟล์คงที่ (CSS/JS/รูป) = stale-while-revalidate (โหลดเร็ว+อัปเดตตามหลัง)
+// ================== Fetch strategy ==================
+// - HTML → network-first (เห็นไฟล์ล่าสุดไว)
+// - CSS/JS/รูป → stale-while-revalidate (โหลดเร็ว อัปเดตตามหลัง)
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const accept = req.headers.get('accept') || '';
@@ -65,4 +66,3 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
-
