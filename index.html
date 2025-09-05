@@ -28,28 +28,28 @@
 
         <div class="button-grid" role="group" aria-label="ปุ่มช่วยพิมพ์">
           <!-- ตัวแปร -->
-          <button class="button btn-variable" onclick="addToDisplay('p')" aria-label="เพิ่มตัวแปร p">p</button>
-          <button class="button btn-variable" onclick="addToDisplay('q')" aria-label="เพิ่มตัวแปร q">q</button>
-          <button class="button btn-variable" onclick="addToDisplay('r')" aria-label="เพิ่มตัวแปร r">r</button>
-          <button class="button btn-variable" onclick="addToDisplay('s')" aria-label="เพิ่มตัวแปร s">s</button>
+          <button class="button btn-variable" onclick="addToDisplay('p')">p</button>
+          <button class="button btn-variable" onclick="addToDisplay('q')">q</button>
+          <button class="button btn-variable" onclick="addToDisplay('r')">r</button>
+          <button class="button btn-variable" onclick="addToDisplay('s')">s</button>
 
           <!-- การดำเนินการ -->
-          <button class="button btn-operator" onclick="addToDisplay('∧')" title="AND" aria-label="AND">∧</button>
-          <button class="button btn-operator" onclick="addToDisplay('∨')" title="OR" aria-label="OR">∨</button>
-          <button class="button btn-operator" onclick="addToDisplay('~')" title="NOT" aria-label="NOT">~</button>
-          <button class="button btn-operator" onclick="addToDisplay('→')" title="IMPLIES" aria-label="IMPLIES">→</button>
+          <button class="button btn-operator" onclick="addToDisplay('∧')" title="AND">∧</button>
+          <button class="button btn-operator" onclick="addToDisplay('∨')" title="OR">∨</button>
+          <button class="button btn-operator" onclick="addToDisplay('~')" title="NOT">~</button>
+          <button class="button btn-operator" onclick="addToDisplay('→')" title="IMPLIES">→</button>
 
-          <button class="button btn-operator" onclick="addToDisplay('↔')" title="IFF" aria-label="IFF">↔</button>
-          <button class="button btn-operator" onclick="addToDisplay('⊕')" title="XOR" aria-label="XOR">⊕</button>
-          <button class="button btn-bracket"  onclick="addToDisplay('(')" aria-label="วงเล็บเปิด">(</button>
-          <button class="button btn-bracket"  onclick="addToDisplay(')')" aria-label="วงเล็บปิด">)</button>
+          <button class="button btn-operator" onclick="addToDisplay('↔')" title="IFF">↔</button>
+          <button class="button btn-operator" onclick="addToDisplay('⊕')" title="XOR">⊕</button>
+          <button class="button btn-bracket" onclick="addToDisplay('(')">(</button>
+          <button class="button btn-bracket" onclick="addToDisplay(')')">)</button>
 
           <!-- ฟังก์ชัน -->
-          <button class="button btn-clear"      onclick="clearDisplay()"        aria-label="ล้างอินพุต">ล้าง</button>
-          <button class="button btn-clear"      onclick="backspace()"           aria-label="ลบตัวก่อนหน้า">ลบ</button>
-          <button class="button btn-navigation" onclick="moveCursorLeft()"      aria-label="เลื่อนเคอร์เซอร์ซ้าย">←</button>
-          <button class="button btn-navigation" onclick="moveCursorRight()"     aria-label="เลื่อนเคอร์เซอร์ขวา">→</button>
-          <button class="button btn-equals"     onclick="evaluateExpression()"  aria-label="คำนวณ">= แสดงผล</button>
+          <button class="button btn-clear" onclick="clearDisplay()">ล้าง</button>
+          <button class="button btn-clear" onclick="backspace()">ลบ</button>
+          <button class="button btn-navigation" onclick="moveCursorLeft()">←</button>
+          <button class="button btn-navigation" onclick="moveCursorRight()">→</button>
+          <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
         </div>
 
         <button class="button btn-toggle" onclick="toggleTruthTable()">
@@ -122,8 +122,10 @@
 
     // ===== แจ้งเตือนเวอร์ชันใหม่ + ปุ่มอัปเดต =====
     if ('serviceWorker' in navigator) {
-      // เมื่อ SW ใหม่ activate และเริ่มคุมหน้า → รีเฟรชอัตโนมัติ
+      // เมื่อ SW ใหม่ activate และเริ่มคุมหน้า → ซ่อนแบนเนอร์ & รีเฟรชอัตโนมัติ
       navigator.serviceWorker.addEventListener('controllerchange', () => {
+        const banner = document.getElementById('updateBanner');
+        if (banner) banner.hidden = true;
         window.location.reload();
       });
 
@@ -136,10 +138,10 @@
 
         const showBanner = () => { if (banner && banner.hidden) banner.hidden = false; };
 
-        // ถ้ามีตัวใหม่ waiting อยู่แล้ว → โชว์แบนเนอร์
+        // มี SW ใหม่รออยู่แล้ว → โชว์แบนเนอร์
         if (reg.waiting) showBanner();
 
-        // จับตัวใหม่ที่กำลังติดตั้ง → รอจน installed แล้วโชว์
+        // กำลังติดตั้ง → รอจน installed แล้วค่อยโชว์
         reg.addEventListener('updatefound', () => {
           const newSW = reg.installing;
           if (!newSW) return;
@@ -156,13 +158,13 @@
             const latestReg = await navigator.serviceWorker.getRegistration();
             if (!latestReg) return;
 
-            // 1) มี waiting → ข้าม waiting ทันที
+            // 1) มี waiting → ข้าม waiting ทันที (SW จะ activate แล้ว controllerchange จะรีเฟรชเอง)
             if (latestReg.waiting) {
               latestReg.waiting.postMessage({ type: 'SKIP_WAITING' });
-              return; // จะรีเฟรชจาก controllerchange
+              return;
             }
 
-            // 2) กำลัง installing → รอให้ติดตั้งเสร็จแล้วค่อยข้าม waiting
+            // 2) กำลัง installing → รอให้ installed แล้วค่อยสั่ง
             if (latestReg.installing) {
               const sw = latestReg.installing;
               sw.addEventListener('statechange', () => {
@@ -173,7 +175,7 @@
               return;
             }
 
-            // 3) ไม่มีตัวใหม่ → ขออัปเดตตรวจไฟล์ล่าสุด
+            // 3) ไม่มีตัวใหม่ → ขออัปเดตเผื่อมีไฟล์ใหม่
             await latestReg.update();
           });
         }
