@@ -1,6 +1,13 @@
 // เปลี่ยนเลขเวอร์ชันทุกครั้งที่อัปเดตไฟล์ เพื่อบังคับล้างแคชเก่า
 const CACHE_STATIC = 'lc-static-v1.0.0';
 
+// รับคำสั่งจากหน้าเว็บให้ SW ข้าม waiting และอัปเดตทันที
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -58,3 +65,4 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
