@@ -1,68 +1,72 @@
-// ===============================================
-// LogicCalc Service Worker (sw.js) – Ready to use
-// ===============================================
-
-// ✅ เปลี่ยนเลขเวอร์ชันทุกครั้งที่อัปเดตไฟล์ เพื่อบังคับล้างแคชเก่า
-const CACHE_STATIC = 'lc-static-v1.0.14';
+// เปลี่ยนเลขเวอร์ชันทุกครั้งที่แก้ไฟล์ (สำคัญมาก)
+const CACHE_STATIC = "lc-static-v1.0.0";
 
 const PRECACHE_URLS = [
-  './',
-  './index.html',
-  './styles.css',
-  './script.js',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  "./",
+  "./index.html",
+  "./styles.css",
+  "./script.js",
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png",
 ];
 
-self.addEventListener('install', (event) => {
+// ติดตั้ง: แคชไฟล์พื้นฐาน
+self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE_STATIC).then((cache) => cache.addAll(PRECACHE_URLS)));
+  event.waitUntil(caches.open(CACHE_STATIC).then((c) => c.addAll(PRECACHE_URLS)));
 });
 
-self.addEventListener('activate', (event) => {
+// เปิดใช้งาน: ลบแคชเก่า + ควบคุมลูกค้าทันที
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k !== CACHE_STATIC ? caches.delete(k) : null)))
-    ).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.map((k) => (k !== CACHE_STATIC ? caches.delete(k) : Promise.resolve())))
+      )
+      .then(() => self.clients.claim())
   );
 });
 
-// รับคำสั่งจากหน้าเว็บ (อัปเดตตอนนี้)
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
-
-self.addEventListener('fetch', (event) => {
+// กลยุทธ์:
+// - หน้า HTML → network-first (ได้เวอร์ชันใหม่ไว)
+// - ไฟล์ static อื่น ๆ → stale-while-revalidate (เร็ว + อัปเดตตามหลัง)
+self.addEventListener("fetch", (event) => {
   const req = event.request;
-  const accept = req.headers.get('accept') || '';
-  const isHTML = req.mode === 'navigate' || accept.includes('text/html');
+  const accept = req.headers.get("accept") || "";
 
-  if (isHTML) {
+  // HTML
+  if (req.mode === "navigate" || accept.includes("text/html")) {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_STATIC).then((c) => c.put(req, copy));
+          const clone = res.clone();
+          caches.open(CACHE_STATIC).then((c) => c.put(req, clone));
           return res;
         })
-        .catch(() => caches.match(req).then((c) => c || caches.match('./index.html')))
+        .catch(() => caches.match(req).then((c) => c || caches.match("./index.html")))
     );
     return;
   }
 
-  // Static: stale-while-revalidate
+  // อื่น ๆ
   event.respondWith(
-    caches.match(req).then((cached) => {
+    caches.match(req).then((cacheRes) => {
       const fetchPromise = fetch(req)
         .then((networkRes) => {
           caches.open(CACHE_STATIC).then((c) => c.put(req, networkRes.clone()));
           return networkRes;
         })
-        .catch(() => cached);
-      return cached || fetchPromise;
+        .catch(() => cacheRes);
+      return cacheRes || fetchPromise;
     })
   );
+});
+
+// รับคำสั่งข้ามคิวจากหน้าเว็บ
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
