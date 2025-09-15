@@ -99,3 +99,19 @@ button:focus-visible,
   }
   h1 { font-size: 1.25rem; }
 }
+
+/* --- Truth table borders only (do not touch other UI) --- */
+.truth-table .table-container > table { 
+  border-collapse: collapse;
+  border: 2px solid #000 !important;       /* กรอบนอกสีดำ */
+}
+
+.truth-table .table-container th,
+.truth-table .table-container td {
+  border: 1px solid #000 !important;       /* เส้นแบ่งทุกช่องสีดำ */
+  padding: 6px 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+
