@@ -1,119 +1,102 @@
-body {
-  font-family: "Sarabun", sans-serif;
-  background: linear-gradient(135deg, #764ba2, #667eea);
-  margin: 0;
-  padding: 20px;
-  display: flex;
-  justify-content: center;
+:root{
+  --bg1:#7c5cff;--bg2:#a18cd1;
+  --card:#ffffff;--muted:#e5e7eb;--ink:#0f172a;
+  --btn-blue:#3498db;--btn-red:#e74c3c;--btn-orange:#f39c12;
+  --btn-green:#2ecc71;--btn-purple:#8e44ad;--btn-slate:#334155;
+}
+html,body{height:100%}
+body{
+  margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;color:var(--ink);
+  background: radial-gradient(1200px 900px at 70% 10%, #e9d5ff 0%, rgba(255,255,255,0) 60%),
+              radial-gradient(900px 700px at 15% 95%, #bfdbfe 0%, rgba(255,255,255,0) 60%),
+              linear-gradient(135deg, var(--bg1), var(--bg2));
+  background-attachment: fixed;
+}
+.page{ max-width: 980px; margin: 36px auto; padding: 0 16px; }
+h1{
+  display:flex; align-items:center; gap:12px; margin:0 0 18px;
+  color:#0b1220; text-shadow:0 1px 0 rgba(255,255,255,.8);
+  font-size: clamp(24px,4vw,36px);
+}
+.logo{
+  width:36px;height:36px;display:grid;place-items:center;
+  background: #ffedd5; border:2px solid #f59e0b; border-radius:10px; font-size:20px;
+  box-shadow:0 6px 18px rgba(0,0,0,.12);
 }
 
-.container {
-  background: #fff;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  max-width: 900px;
-  width: 100%;
+/* การ์ดเครื่องคิดเลข */
+.calculator{
+  background: var(--card);
+  border:1px solid var(--muted);
+  border-radius:16px;
+  box-shadow: 0 18px 50px rgba(15,23,42,.10);
+  padding:16px;
+}
+.display{
+  width:100%; box-sizing:border-box;
+  border:1px solid var(--muted); border-radius:12px;
+  padding:14px 16px; font-size:1.05rem; background:#fff;
 }
 
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
-}
+/* กริดปุ่ม */
+.button-grid{ margin-top:14px; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:10px; }
+@media (max-width:900px){ .button-grid{ grid-template-columns:repeat(8,minmax(0,1fr)); } }
+@media (max-width:580px){ .button-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
 
-.display {
-  width: 100%;
-  font-size: 1.2rem;
-  padding: 10px;
-  margin-bottom: 12px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+.button{
+  appearance:none; border:none; border-radius:12px; min-height:46px;
+  color:#fff; font-weight:800; letter-spacing:.2px; cursor:pointer;
+  box-shadow:0 4px 14px rgba(2,6,23,.10);
+  transition: transform .05s ease, filter .12s ease, box-shadow .12s ease;
 }
+.button:active{ transform:translateY(1px) }
+.button:hover{ filter:brightness(1.05) }
 
-.result-display {
-  min-height: 40px;
-  margin-bottom: 12px;
-  padding: 10px;
-  border-radius: 8px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-}
+.btn-variable{ background:var(--btn-blue) }
+.btn-operator{ background:var(--btn-red) }
+.btn-bracket { background:var(--btn-orange) }
+.btn-navigation{ background:var(--btn-purple) }
+.btn-clear{ background:var(--btn-orange) }
+.btn-equals{ background:var(--btn-green); grid-column: span 2; }
+.btn-toggle{ background:var(--btn-slate); border:1px solid #1f2937; margin-top:12px }
+.btn-install{ margin-top:10px; width:100%; background:#0ea5e9 }
 
-.button-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
+.result-display{
+  margin-top:12px; padding:12px 14px; border:1px solid #cde8cf; background:#eef9f0; border-radius:10px; display:none;
 }
+.result-display.show{ display:block }
 
-button {
-  padding: 10px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  color: white;
+/* กล่องตารางค่าความจริง */
+.truth-box{
+  margin-top:22px; background: var(--card);
+  border:1px solid var(--muted); border-radius:16px; box-shadow:0 18px 50px rgba(15,23,42,.08);
+  padding:16px;
 }
+.truth-box h3{ margin:0 0 10px }
+.table-container{ overflow-x:auto; -webkit-overflow-scrolling:touch }
 
-button:hover { opacity: 0.9; }
+/* ตารางเต็มการ์ด + กรอบดำทุกช่อง */
+.table-container table{
+  width:100%;
+  min-width:100%;
+  border-collapse:collapse;
+  border:2px solid #000;      /* กรอบนอกสีดำ */
+  table-layout:fixed;         /* คอลัมน์กว้างเท่ากัน */
+}
+.table-container th,.table-container td{
+  padding:10px 14px;
+  border:1px solid #000;      /* เส้นแบ่งทุกช่องสีดำ */
+  text-align:center;
+  white-space:nowrap;
+}
+.table-container thead th{
+  background:#0f172a; color:#fff; font-weight:700;
+}
+.true { background:#e7f8ee; color:#15803d; }
+.false{ background:#fdecec; color:#b91c1c; }
 
-/* สีปุ่ม */
-button:nth-child(1),button:nth-child(2),button:nth-child(3),button:nth-child(4) { background: #3b82f6; }
-button:nth-child(5),button:nth-child(6),button:nth-child(7),button:nth-child(8),
-button:nth-child(9),button:nth-child(10),button:nth-child(11),button:nth-child(12) { background: #ef4444; }
-button:nth-child(13),button:nth-child(14) { background: #f59e0b; }
-button:nth-child(15),button:nth-child(16) { background: #8b5cf6; }
-.equals { background: #10b981 !important; grid-column: span 4; }
-.toggle { background: #374151; margin-top: 8px; }
-#installButton { background: #0ea5e9; margin-top: 8px; }
-
-/* กล่องตาราง */
-.truth-box {
-  margin-top: 20px;
-  background: #fff;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.truth-box .table-container { overflow-x: auto; }
-.truth-box table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 2px solid #000;
-}
-.truth-box th, .truth-box td {
-  border: 1px solid #000;
-  padding: 10px;
-  text-align: center;
-}
-.truth-box th {
-  background: #111827;
-  color: white;
-}
-.truth-box .true { background: #e7f8ee; color: #15803d; }
-.truth-box .false { background: #fdecec; color: #b91c1c; }
-
-/* แบนเนอร์ */
-.update-banner {
-  position: sticky;
-  bottom: 12px;
-  left: 0;
-  right: 0;
-  margin: 12px auto;
-  max-width: 720px;
-  background: #0ea5e9;
-  color: #fff;
-  padding: 10px 12px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-}
-.update-banner button {
-  background: #fff;
-  color: #0ea5e9;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-weight: bold;
+/* ปุ่มเล็กใต้กริด */
+.under-controls{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap }
+.muted-btn{
+  background:#f8fafc; border:1px solid var(--muted); color:#111827; border-radius:10px; padding:8px 10px; cursor:pointer;
 }
