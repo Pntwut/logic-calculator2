@@ -1,4 +1,4 @@
-/* ========== Update Banner ========== */
+/* แบนเนอร์อัปเดตเวอร์ชัน */
 .update-banner {
   position: sticky;
   bottom: 12px;
@@ -30,21 +30,21 @@
 
 /* ========== Truth Table: Mobile-friendly scroll ========== */
 .table-container {
-  overflow-x: auto;
+  overflow-x: auto;           
   -webkit-overflow-scrolling: touch;
 }
 
 .table-container table {
   border-collapse: collapse;
-  min-width: 640px;
-  width: max-content;
-  border: 2px solid #000; /* กรอบรอบนอกสีดำ */
+  min-width: 640px;           
+  width: max-content;         
+  border: 2px solid #000;     /* ✅ กรอบนอกสีดำ */
 }
 
 .table-container th,
 .table-container td {
   padding: 6px 10px;
-  border: 1px solid #000;  /* เส้นแบ่งทุกช่องสีดำ */
+  border: 1px solid #000;     /* ✅ เส้นสีดำทุกช่อง */
   text-align: center;
   white-space: nowrap;
 }
@@ -52,78 +52,44 @@
 .true {  background: #e7f8ee; color: #15803d; }
 .false { background: #fdecec; color: #b91c1c; }
 
-/* ========== Inputs & Buttons ========== */
+/* ========== Inputs & Buttons: touch size + focus-visible ========== */
 .display {
   font-size: 1.05rem;
   padding: 10px 12px;
   min-height: 40px;
-  width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  box-sizing: border-box;
 }
 
 .button {
-  min-height: 40px;
+  min-height: 40px;           
   min-width: 40px;
-  padding: 6px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #f9fafb;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background 0.15s ease;
 }
-.button:hover { background: #f3f4f6; }
 
 button:focus-visible,
 .display:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #3b82f6; 
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-/* ปุ่มเฉพาะประเภท */
-.btn-variable   { background: #eef2ff; }
-.btn-operator   { background: #fff7ed; }
-.btn-bracket    { background: #f0fdf4; }
-.btn-clear      { background: #fee2e2; }
-.btn-equals     { background: #dcfce7; font-weight: 600; }
-.btn-toggle     { margin-top: 10px; background: #e0f2fe; }
-.btn-install    { margin-top: 10px; background: #ede9fe; }
-
 /* ========== Layout spacing ========== */
-.container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 720px;
-  margin: auto;
-  padding: 16px;
-  font-family: system-ui, sans-serif;
-}
+.container { gap: 12px; }
 .main-container { margin-top: 8px; }
-h1 { text-align: center; }
 
 .result-display.show {
   margin-top: 8px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #f8fafc;
+  background: #f8fafc;        
   border: 1px solid #e5e7eb;
-  font-size: 0.95rem;
-  line-height: 1.4;
 }
 
 /* ========== Small screens tweaks ========== */
 @media (max-width: 480px) {
   .button-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
   }
   .button {
-    min-width: 44px;
+    min-width: 44px;          
   }
   h1 { font-size: 1.25rem; }
 }
