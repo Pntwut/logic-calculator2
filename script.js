@@ -1,4 +1,4 @@
-/* ===== Logic Calculator (no update banner) ===== */
+/* ===== Logic Calculator + Download CSV (no XOR / no update banner) ===== */
 
 let currentExpression = "";
 let cursorPosition = 0;
@@ -34,14 +34,13 @@ function hideResult(){ const el=resultEl(); if(!el) return; el.innerHTML=""; el.
 
 /* Logic helpers */
 function extractVariables(expr){ const m=expr.match(/[pqrs]/g)||[]; return [...new Set(m)].sort(); }
-function containsOperator(expr){ return /[~∧∨→↔⊕]/.test(expr); }
+function containsOperator(expr){ return /[~∧∨→↔]/.test(expr); } // ไม่มี ⊕ แล้ว
 function evalNext(expr){
   if(/~[TF]/.test(expr)) return expr.replace(/~([TF])/g,(_,a)=>a==="T"?"F":"T");
   if(/[TF]\s*∧\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*∧\s*([TF])/g,(_,a,b)=>a==="T"&&b==="T"?"T":"F");
   if(/[TF]\s*∨\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*∨\s*([TF])/g,(_,a,b)=>a==="T"||b==="T"?"T":"F");
   if(/[TF]\s*→\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*→\s*([TF])/g,(_,a,b)=>a==="F"||b==="T"?"T":"F");
   if(/[TF]\s*↔\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*↔\s*([TF])/g,(_,a,b)=>a===b?"T":"F");
-  if(/[TF]\s*⊕\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*⊕\s*([TF])/g,(_,a,b)=>a!==b?"T":"F");
   return expr;
 }
 function evaluateSimpleTF(expr){
@@ -96,6 +95,25 @@ function toggleTruthTable(){
   else{ box.hidden=true; txt.textContent="เปิดตารางค่าความจริง"; }
 }
 
+/* Download CSV */
+function downloadTruthTable(){
+  const tbl = document.getElementById("truthTableContent");
+  if(!tbl){ alert("ยังไม่มีตารางค่าความจริง"); return; }
+  const rows = tbl.querySelectorAll("tr");
+  const csv = [];
+  rows.forEach(r=>{
+    const cols = r.querySelectorAll("th,td");
+    const line = Array.from(cols).map(c=>c.innerText.trim()).join(",");
+    csv.push(line);
+  });
+  const blob = new Blob([csv.join("\n")], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "truth_table.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 /* Input events */
 document.addEventListener("DOMContentLoaded", ()=>{
   const input=displayEl(); if(!input) return;
@@ -112,4 +130,4 @@ window.moveCursorLeft=moveCursorLeft;
 window.moveCursorRight=moveCursorRight;
 window.evaluateExpression=evaluateExpression;
 window.toggleTruthTable=toggleTruthTable;
-window.installApp=()=>{}; // โค้ดติดตั้งอยู่ใน index.html แล้ว
+window.downloadTruthTable=downloadTruthTable;
