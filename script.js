@@ -1,4 +1,4 @@
-/* ===== Logic Calculator + Download CSV (no XOR / no update banner) ===== */
+/* ===== Logic Calculator + Subexpression Columns + Download CSV ===== */
 
 let currentExpression = "";
 let cursorPosition = 0;
@@ -35,6 +35,7 @@ function hideResult(){ const el=resultEl(); if(!el) return; el.innerHTML=""; el.
 /* Logic helpers */
 function extractVariables(expr){ const m=expr.match(/[pqrs]/g)||[]; return [...new Set(m)].sort(); }
 function containsOperator(expr){ return /[~∧∨→↔]/.test(expr); } // ไม่มี ⊕ แล้ว
+
 function evalNext(expr){
   if(/~[TF]/.test(expr)) return expr.replace(/~([TF])/g,(_,a)=>a==="T"?"F":"T");
   if(/[TF]\s*∧\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*∧\s*([TF])/g,(_,a,b)=>a==="T"&&b==="T"?"T":"F");
@@ -60,19 +61,113 @@ function evaluateWithValues(expression, values){
   return evaluateSimpleTF(cur);
 }
 
-/* Truth table */
+/* ---------- สร้างรายการ "นิพจน์ย่อย" จากนิพจน์เต็ม ---------- */
+/* เป้าหมาย: ได้คอลัมน์ = [variables..., subExprs..., fullExpr] */
+function getSubExpressions(expression){
+  const out = new Set();
+
+  // 1) ตัวแปรเดี่ยว
+  extractVariables(expression).forEach(v=>out.add(v));
+
+  // 2) นิเสธของตัวแปร (~p, ~q, …)
+  (expression.match(/~[pqrs]/g) || []).forEach(x=>out.add(x));
+
+  // 3) เนื้อหาในวงเล็บ (เช่น (p∧q) → เพิ่ม "p∧q")
+  const innerBracketRe = /\(([^\(\)]+)\)/g;
+  let m;
+  while((m = innerBracketRe.exec(expression)) !== null){
+    out.add(m[1].trim());
+  }
+
+  // 4) นิเสธทั้งวงเล็บ (~(p∨q))
+  (expression.match(/~\([^\(\)]+\)/g) || []).forEach(x=>out.add(x));
+
+  // 5) จับคู่ไบนารีพื้นฐานอย่าง "term op term"
+  // term = ~?variable | ~(...) | (...) | variable
+  const term = '(?:~\\([^)]+\\)|\\([^()]+\\)|~?[pqrs])';
+  const binOps = '(?:∧|∨|→|↔)';
+  const binRe = new RegExp(`${term}\\s*${binOps}\\s*${term}`,'g');
+
+  // รันหลายรอบเพื่อเก็บ subexpr ซ้อน ๆ
+  for(let i=0;i<5;i++){
+    const found = [];
+    let mm;
+    while((mm = binRe.exec(expression)) !== null){
+      found.push(mm[0].replace(/\s+/g,'').trim());
+    }
+    found.forEach(x=>out.add(x));
+    // พยายามขยาย subexpr จากชิ้นส่วนที่มีอยู่แล้ว (เช่น "p∧q" + "∨r")
+    // split โดย operator ชั้นนอกแบบหยาบ ๆ เพื่อเก็บชิ้นย่อยที่ใหญ่ขึ้น
+    const ops = ['↔','→','∨','∧']; // ไล่จากความสำคัญต่ำไปสูงพอให้แตกส่วน
+    for(const op of ops){
+      if(expression.includes(op)){
+        const parts = expression.split(op);
+        // เก็บกลุ่มซ้ายรวมขวาทีละส่วนแบบง่าย
+        for(let j=0;j<parts.length-1;j++){
+          const left = parts.slice(0,j+1).join(op);
+          const right = parts[j+1];
+          const cand = (left + op + right).replace(/\s+/g,'').trim();
+          if(cand && cand !== expression) out.add(cand);
+        }
+      }
+    }
+  }
+
+  // 6) ลบตัวที่ซ้ำกับตัวแปร (เราจะเรียงตัวแปรขึ้นก่อนอยู่แล้ว)
+  // แล้วเพิ่มนิพจน์เต็มท้ายสุด
+  const variables = extractVariables(expression);
+  const subExprs = [...out].filter(x => !(variables.includes(x)) && x !== expression);
+
+  // เรียงให้สวย: ความยาวน้อย→มาก จะได้ p∧q มาก่อน p∧q∨r
+  subExprs.sort((a,b)=>a.length-b.length);
+
+  return { variables, subExprs, full: expression };
+}
+
+/* ---------- สร้างตารางค่าความจริง ---------- */
 function generateTruthTable(){
   const expr=currentExpression.trim(); const head=tHead(); const body=tBody(); if(!head||!body) return;
   head.innerHTML=""; body.innerHTML=""; if(!expr) return;
-  const vars=extractVariables(expr); const n=vars.length; const rows=2**n;
 
-  vars.forEach(v=>{ const th=document.createElement("th"); th.textContent=v; head.appendChild(th); });
-  const th=document.createElement("th"); th.textContent=expr; head.appendChild(th);
+  const { variables, subExprs, full } = getSubExpressions(expr);
+  const n=variables.length; const rows=2**n;
 
+  // หัวตาราง: ตัวแปร → นิพจน์ย่อย → นิพจน์เต็ม
+  [...variables, ...subExprs, full].forEach(label=>{
+    const th=document.createElement("th");
+    th.textContent=label;
+    head.appendChild(th);
+  });
+
+  // สร้างแถว
   for(let i=rows-1;i>=0;i--){
-    const tr=document.createElement("tr"), values={};
-    vars.forEach((v,j)=>{ const val=Boolean(i&(1<<(n-1-j))); values[v]=val; const td=document.createElement("td"); td.textContent=val?"T":"F"; td.className=val?"true":"false"; tr.appendChild(td); });
-    const res=evaluateWithValues(expr,values); const td=document.createElement("td"); td.textContent=res?"T":"F"; td.className=res?"true":"false"; tr.appendChild(td);
+    const tr=document.createElement("tr");
+    const values={};
+    // ค่า T/F ให้ตัวแปร
+    variables.forEach((v,j)=>{
+      const val=Boolean(i&(1<<(n-1-j)));
+      values[v]=val;
+      const td=document.createElement("td");
+      td.textContent=val?"T":"F";
+      td.className=val?"true":"false";
+      tr.appendChild(td);
+    });
+    // ประเมินนิพจน์ย่อย
+    subExprs.forEach(se=>{
+      const td=document.createElement("td");
+      const res = evaluateWithValues(se, values);
+      td.textContent = res?"T":"F";
+      td.className   = res?"true":"false";
+      tr.appendChild(td);
+    });
+    // นิพจน์เต็ม
+    {
+      const td=document.createElement("td");
+      const res=evaluateWithValues(full, values);
+      td.textContent=res?"T":"F";
+      td.className  =res?"true":"false";
+      tr.appendChild(td);
+    }
     body.appendChild(tr);
   }
 }
@@ -95,7 +190,7 @@ function toggleTruthTable(){
   else{ box.hidden=true; txt.textContent="เปิดตารางค่าความจริง"; }
 }
 
-/* Download CSV */
+/* Download CSV (ตารางที่เห็นปัจจุบัน) */
 function downloadTruthTable(){
   const tbl = document.getElementById("truthTableContent");
   if(!tbl){ alert("ยังไม่มีตารางค่าความจริง"); return; }
