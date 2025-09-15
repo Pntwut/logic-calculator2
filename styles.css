@@ -1,117 +1,94 @@
-/* แบนเนอร์อัปเดตเวอร์ชัน */
-.update-banner {
-  position: sticky;
-  bottom: 12px;
-  left: 0;
-  right: 0;
-  margin: 12px auto;
-  max-width: 720px;
-  background: #0ea5e9;
-  color: #fff;
-  padding: 10px 12px;
-  border-radius: 10px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-  z-index: 999;
+:root{
+  --bg1:#7c5cff;--bg2:#a18cd1;
+  --card:#ffffff;--muted:#e5e7eb;--ink:#0f172a;
+  --btn-blue:#3498db;--btn-red:#e74c3c;--btn-orange:#f39c12;
+  --btn-green:#2ecc71;--btn-purple:#8e44ad;--btn-slate:#334155;
 }
-.update-banner .button {
-  background: #fff;
-  color: #0ea5e9;
-  border: none;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
+html,body{height:100%}
+body{
+  margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;color:var(--ink);
+  background: radial-gradient(1200px 900px at 70% 10%, #e9d5ff 0%, rgba(255,255,255,0) 60%),
+              radial-gradient(900px 700px at 15% 95%, #bfdbfe 0%, rgba(255,255,255,0) 60%),
+              linear-gradient(135deg, var(--bg1), var(--bg2));
+  background-attachment: fixed;
 }
-.update-banner .button:hover { opacity: 0.95; }
-
-/* ========== Truth Table: Mobile-friendly scroll ========== */
-.table-container {
-  overflow-x: auto;           /* เลื่อนในแนวนอน */
-  -webkit-overflow-scrolling: touch; /* เลื่อนลื่นบน iOS */
+.page{ max-width: 980px; margin: 36px auto; padding: 0 16px; }
+h1{
+  display:flex; align-items:center; gap:12px; margin:0 0 18px;
+  color:#0b1220; text-shadow:0 1px 0 rgba(255,255,255,.8);
+  font-size: clamp(24px,4vw,36px);
+}
+.logo{
+  width:36px;height:36px;display:grid;place-items:center;
+  background: #ffedd5; border:2px solid #f59e0b; border-radius:10px; font-size:20px;
+  box-shadow:0 6px 18px rgba(0,0,0,.12);
 }
 
-.table-container table {
-  border-collapse: collapse;
-  min-width: 640px;           /* ถ้าคอลัมน์เยอะจะเลื่อนข้างได้ */
-  width: max-content;         /* พอดีกับจำนวนคอลัมน์ */
+/* การ์ดเครื่องคิดเลข */
+.calculator{
+  background: var(--card);
+  border:1px solid var(--muted);
+  border-radius:16px;
+  box-shadow: 0 18px 50px rgba(15,23,42,.10);
+  padding:16px;
+}
+.display{
+  width:100%; box-sizing:border-box;
+  border:1px solid var(--muted); border-radius:12px;
+  padding:14px 16px; font-size:1.05rem; background:#fff;
 }
 
-.table-container th,
-.table-container td {
-  padding: 6px 10px;
-  border: 1px solid #e5e7eb;  /* เส้นแบ่งสีเทาอ่อน */
-  text-align: center;
-  white-space: nowrap;        /* ไม่ตัดคำเพื่อให้ตารางคงคอลัมน์ */
+/* กริดปุ่ม */
+.button-grid{ margin-top:14px; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:10px; }
+@media (max-width:900px){ .button-grid{ grid-template-columns:repeat(8,minmax(0,1fr)); } }
+@media (max-width:580px){ .button-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+
+.button{
+  appearance:none; border:none; border-radius:12px; min-height:46px;
+  color:#fff; font-weight:800; letter-spacing:.2px; cursor:pointer;
+  box-shadow:0 4px 14px rgba(2,6,23,.10);
+  transition: transform .05s ease, filter .12s ease, box-shadow .12s ease;
 }
+.button:active{ transform:translateY(1px) }
+.button:hover{ filter:brightness(1.05) }
 
-.true {  background: #e7f8ee; color: #15803d; }  /* สีพื้น T */
-.false { background: #fdecec; color: #b91c1c; }  /* สีพื้น F */
+.btn-variable{ background:var(--btn-blue) }
+.btn-operator{ background:var(--btn-red) }
+.btn-bracket { background:var(--btn-orange) }
+.btn-navigation{ background:var(--btn-purple) }
+.btn-clear{ background:var(--btn-orange) }
+.btn-equals{ background:var(--btn-green); grid-column: span 2; }
+.btn-toggle{ background:var(--btn-slate); border:1px solid #1f2937; margin-top:12px }
+.btn-install{ margin-top:10px; width:100%; background:#0ea5e9 }
 
-/* ➕ เพิ่มเส้นตารางสีดำเฉพาะ truth table */
-.truth-table table,
-.truth-table th,
-.truth-table td {
-  border: 1px solid #000; /* กรอบเส้นสีดำ */
+.result-display{
+  margin-top:12px; padding:12px 14px; border:1px solid #cde8cf; background:#eef9f0; border-radius:10px; display:none;
 }
+.result-display.show{ display:block }
 
-/* ========== Inputs & Buttons: touch size + focus-visible ========== */
-.display {
-  font-size: 1.05rem;
-  padding: 10px 12px;
-  min-height: 40px;
+/* ตารางค่าความจริง */
+.truth-box{
+  margin-top:22px; background: var(--card);
+  border:1px solid var(--muted); border-radius:16px; box-shadow:0 18px 50px rgba(15,23,42,.08);
+  padding:16px;
 }
-
-.button {
-  min-height: 40px;           /* แตะง่ายขึ้น */
-  min-width: 40px;
+.truth-box h3{ margin:0 0 10px }
+.table-container{ overflow-x:auto; -webkit-overflow-scrolling:touch }
+.table-container table{
+  border-collapse:collapse; min-width:640px; width:max-content;
+  border:2px solid #000; /* กรอบนอกสีดำ */
 }
-
-button:focus-visible,
-.display:focus-visible {
-  outline: 2px solid #3b82f6; /* ฟ้า */
-  outline-offset: 2px;
-  border-radius: 6px;
+.table-container th,.table-container td{
+  padding:10px 14px; border:1px solid #000; text-align:center; white-space:nowrap;
 }
-
-/* ========== Layout spacing ========== */
-.container { gap: 12px; }
-.main-container { margin-top: 8px; }
-
-.result-display.show {
-  margin-top: 8px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #f8fafc;        /* เทาอ่อนอ่านง่าย */
-  border: 1px solid #e5e7eb;
+.table-container thead th{
+  background:#0f172a; color:#fff; font-weight:700;
 }
+.true { background:#e7f8ee; color:#15803d; }
+.false{ background:#fdecec; color:#b91c1c; }
 
-/* ========== Small screens tweaks ========== */
-@media (max-width: 480px) {
-  .button-grid {
-    gap: 6px;
-  }
-  .button {
-    min-width: 44px;          /* ตามแนวทาง touch target ของมือถือ */
-  }
-  h1 { font-size: 1.25rem; }
+/* ปุ่มเล็กใต้กริด */
+.under-controls{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap }
+.muted-btn{
+  background:#f8fafc; border:1px solid var(--muted); color:#111827; border-radius:10px; padding:8px 10px; cursor:pointer;
 }
-
-/* --- Truth table borders only (do not touch other UI) --- */
-.truth-table .table-container > table { 
-  border-collapse: collapse;
-  border: 2px solid #000 !important;       /* กรอบนอกสีดำ */
-}
-
-.truth-table .table-container th,
-.truth-table .table-container td {
-  border: 1px solid #000 !important;       /* เส้นแบ่งทุกช่องสีดำ */
-  padding: 6px 10px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-
