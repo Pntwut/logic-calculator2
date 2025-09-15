@@ -59,12 +59,20 @@ h1{
 .btn-clear{ background:var(--btn-orange) }
 .btn-equals{ background:var(--btn-green); grid-column: span 2; }
 .btn-toggle{ background:var(--btn-slate); border:1px solid #1f2937; margin-top:12px }
-.btn-install{ margin-top:10px; width:100%; background:#0ea5e9 }
+.btn-install{ margin-top:10px; background:#0ea5e9 }
 
-.result-display{
-  margin-top:12px; padding:12px 14px; border:1px solid #cde8cf; background:#eef9f0; border-radius:10px; display:none;
+/* ปุ่มดาวน์โหลด */
+.btn-download{
+  background:#2563eb; color:#fff; border:none; border-radius:10px;
+  padding:10px 14px; font-weight:700; box-shadow:0 4px 14px rgba(2,6,23,.12);
 }
-.result-display.show{ display:block }
+.btn-download:hover{ filter:brightness(1.05) }
+
+/* แถวปุ่มเล็กใต้กริด */
+.under-controls{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap }
+.muted-btn{
+  background:#f8fafc; border:1px solid var(--muted); color:#111827; border-radius:10px; padding:8px 10px; cursor:pointer;
+}
 
 /* กล่องตารางค่าความจริง */
 .truth-box{
@@ -95,8 +103,7 @@ h1{
 .true { background:#e7f8ee; color:#15803d; }
 .false{ background:#fdecec; color:#b91c1c; }
 
-/* ปุ่มเล็กใต้กริด */
-.under-controls{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap }
-.muted-btn{
-  background:#f8fafc; border:1px solid var(--muted); color:#111827; border-radius:10px; padding:8px 10px; cursor:pointer;
+.result-display{
+  margin-top:12px; padding:12px 14px; border:1px solid #cde8cf; background:#eef9f0; border-radius:10px; display:none;
 }
+.result-display.show{ display:block }
