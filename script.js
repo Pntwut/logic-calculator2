@@ -1,437 +1,372 @@
-// =====================================================
-// Logic Calculator - script.js (TH) – Improved
-// - ASCII normalize
-// - XSS-safe output
-// - Parentheses check
-// - Enter to evaluate + remember last expr
-// - Truth table renders inside .table-container
-// =====================================================
+/* =========================
+   Logic Calculator – Script
+   ========================= */
 
-// -------------------------
-// State
-// -------------------------
-let currentExpression = '';
+/* --- สถานะอินพุต --- */
+let currentExpression = "";
 let cursorPosition = 0;
 let truthTableVisible = false;
 
-// -------------------------
-// Utils
-// -------------------------
-function escapeHTML(s) {
-  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+/* --- DOM refs --- */
+const $ = (sel) => document.querySelector(sel);
+const displayEl        = () => $("#display");
+const resultEl         = () => $("#resultDisplay");
+const truthBoxEl       = () => $("#truthTable");
+const tableHeaderEl    = () => $("#tableHeader");
+const tableBodyEl      = () => $("#tableBody");
+const toggleTextEl     = () => $("#toggleText");
+
+/* =========================
+   UI Helpers
+   ========================= */
+function updateDisplay() {
+  const el = displayEl();
+  if (!el) return;
+  el.value = currentExpression;
+  el.setSelectionRange(cursorPosition, cursorPosition);
+  el.focus();
 }
-
-// แปลงอินพุต ASCII -> สัญลักษณ์ตรรกศาสตร์ และลบช่องว่าง
-function normalizeInput(src) {
-  return src
-    .replace(/\s+/g, '')                // ลบช่องว่างทั้งหมด
-    .replace(/!/g, '~')                 // !p -> ~p
-    .replace(/\^/g, '∧')                // p^q -> p∧q
-    .replace(/\|/g, '∨')                // p|q -> p∨q
-    .replace(/->|=>/g, '→')             // p->q, p=>q -> p→q
-    .replace(/<->|<=>/g, '↔')           // p<->q -> p↔q
-    .replace(/\bxor\b/gi, '⊕');         // xor -> ⊕
-}
-
-// ตรวจวงเล็บสมดุลไหม
-function checkParentheses(s) {
-  let c = 0;
-  for (let i = 0; i < s.length; i++) {
-    if (s[i] === '(') c++;
-    else if (s[i] === ')') c--;
-    if (c < 0) return { ok:false, at:i }; // ปิดเกิน
-  }
-  return { ok: c === 0, at: -1 };
-}
-
-// -------------------------
-// Bootstrap
-// -------------------------
-document.addEventListener('DOMContentLoaded', function () {
-  const display = document.getElementById('display');
-
-  // โหลดสูตรล่าสุด (optional UX)
-  const last = localStorage.getItem('lc:lastExpr');
-  if (last) {
-    currentExpression = last;
-    updateDisplay();
-  }
-
-  // พิมพ์: sync state + gen table ถ้าเปิดไว้
-  display.addEventListener('input', function () {
-    currentExpression = normalizeInput(this.value);
-    cursorPosition = this.selectionStart;
-    // เก็บค่า
-    localStorage.setItem('lc:lastExpr', currentExpression);
-    // ซิงก์ช่องแสดง (เพราะ normalize ตัดช่องว่างออก)
-    updateDisplay();
-    if (truthTableVisible) generateTruthTable();
-  });
-
-  display.addEventListener('click', function () {
-    cursorPosition = this.selectionStart;
-  });
-
-  display.addEventListener('keyup', function () {
-    cursorPosition = this.selectionStart;
-  });
-
-  // Enter = evaluate
-  display.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      evaluateExpression();
-    }
-  });
-});
-
-// -------------------------
-// Display helpers
-// -------------------------
 function addToDisplay(value) {
   currentExpression =
     currentExpression.slice(0, cursorPosition) +
     value +
     currentExpression.slice(cursorPosition);
-  currentExpression = normalizeInput(currentExpression);
   cursorPosition += value.length;
   updateDisplay();
-  localStorage.setItem('lc:lastExpr', currentExpression);
   if (truthTableVisible) generateTruthTable();
 }
-
-function updateDisplay() {
-  const display = document.getElementById('display');
-  display.value = currentExpression;
-  display.setSelectionRange(cursorPosition, cursorPosition);
-  display.focus();
-}
-
-function moveCursorLeft() {
-  const display = document.getElementById('display');
-  if (cursorPosition > 0) {
-    cursorPosition--;
-    display.setSelectionRange(cursorPosition, cursorPosition);
-    display.focus();
-  }
-}
-
-function moveCursorRight() {
-  const display = document.getElementById('display');
-  if (cursorPosition < currentExpression.length) {
-    cursorPosition++;
-    display.setSelectionRange(cursorPosition, cursorPosition);
-    display.focus();
-  }
-}
-
 function clearDisplay() {
-  currentExpression = '';
+  currentExpression = "";
   cursorPosition = 0;
   updateDisplay();
-  const rd = document.getElementById('resultDisplay');
-  rd.classList.remove('show');
+  hideResult();
   if (truthTableVisible) generateTruthTable();
 }
-
 function backspace() {
   if (cursorPosition > 0) {
     currentExpression =
       currentExpression.slice(0, cursorPosition - 1) +
       currentExpression.slice(cursorPosition);
-    currentExpression = normalizeInput(currentExpression);
     cursorPosition--;
     updateDisplay();
-    localStorage.setItem('lc:lastExpr', currentExpression);
     if (truthTableVisible) generateTruthTable();
   }
 }
-
-// -------------------------
-// Truth table toggle
-// -------------------------
-function toggleTruthTable() {
-  truthTableVisible = !truthTableVisible;
-  const truthTable = document.getElementById('truthTable');
-  const toggleText = document.getElementById('toggleText');
-
-  if (truthTableVisible) {
-    truthTable.classList.add('show');
-    toggleText.textContent = 'ปิดตารางค่าความจริง';
-    generateTruthTable();
-  } else {
-    truthTable.classList.remove('show');
-    toggleText.textContent = 'เปิดตารางค่าความจริง';
+function moveCursorLeft() {
+  if (cursorPosition > 0) {
+    cursorPosition--;
+    updateDisplay();
   }
 }
-
-// -------------------------
-// Evaluation
-// -------------------------
-function evaluateExpression() {
-  if (!currentExpression) return;
-
-  // normalize รอบสุดท้ายกันพลาด
-  currentExpression = normalizeInput(currentExpression);
-  updateDisplay();
-
-  // วงเล็บต้องสมดุลก่อน
-  const pc = checkParentheses(currentExpression);
-  const resultDisplay = document.getElementById('resultDisplay');
-  if (!pc.ok) {
-    resultDisplay.innerHTML = '<span class="error">วงเล็บไม่สมดุล</span>';
-    resultDisplay.classList.add('show');
-    return;
-  }
-
-  const variables = extractVariables(currentExpression);
-  if (variables.length === 0) {
-    resultDisplay.innerHTML = '<span class="error">ไม่พบตัวแปรในสูตร</span>';
-    resultDisplay.classList.add('show');
-    return;
-  }
-
-  try {
-    let isTautology = true;
-    const numRows = Math.pow(2, variables.length);
-
-    for (let i = 0; i < numRows; i++) {
-      const values = {};
-      for (let j = 0; j < variables.length; j++) {
-        values[variables[j]] = Boolean(i & (1 << (variables.length - 1 - j)));
-      }
-      const result = evaluateStepByStep(currentExpression, values);
-      if (!result.result) { isTautology = false; break; }
-    }
-
-    // แสดงผลแบบ XSS-safe: ใช้ textContent ใส่สูตร
-    resultDisplay.innerHTML = `
-      <div><strong>สูตร:</strong> <span id="exprOut"></span></div>
-      <div><strong>ตัวแปร:</strong> ${variables.join(', ')}</div>
-      <div><strong>สถานะ:</strong> <span style="color:${isTautology ? '#27ae60' : '#e74c3c'}">
-        ${isTautology ? 'เป็นสัจนิรันดร์' : 'ไม่เป็นสัจนิรันดร์'}
-      </span></div>
-    `;
-    const exprOut = document.getElementById('exprOut');
-    exprOut.textContent = currentExpression; // ✅ ปลอดภัย
-
-    resultDisplay.classList.add('show');
-    if (truthTableVisible) generateTruthTable();
-
-  } catch (error) {
-    resultDisplay.innerHTML = '<span class="error">สูตรไม่ถูกต้อง</span>';
-    resultDisplay.classList.add('show');
+function moveCursorRight() {
+  if (cursorPosition < currentExpression.length) {
+    cursorPosition++;
+    updateDisplay();
   }
 }
-
-// -------------------------
-// Truth table (fixed styles)
-// -------------------------
-function generateTruthTable() {
-  if (!currentExpression) return;
-
-  const truthTableDiv = document.getElementById('truthTable');
-  truthTableDiv.innerHTML = `
-    <h3>ตารางค่าความจริง</h3>
-    <div class="table-container" id="ttContainer"></div>
-  `;
-
-  const container = document.getElementById('ttContainer');
-  const subExpressions = getSubExpressions(currentExpression);
-  if (subExpressions.length > 0) {
-    createSingleTable(subExpressions, container);
-  }
+function showResult(html) {
+  const el = resultEl();
+  if (!el) return;
+  el.innerHTML = html;
+  el.classList.add("show");
+}
+function hideResult() {
+  const el = resultEl();
+  if (!el) return;
+  el.innerHTML = "";
+  el.classList.remove("show");
 }
 
-function createSingleTable(expressions, container) {
-  const variables = extractVariables(expressions[expressions.length - 1]);
-  const numRows = Math.pow(2, variables.length);
-
-  const mainExpr = expressions[expressions.length - 1];
-  const subExprs = expressions.slice(0, -1).filter(e => !variables.includes(e));
-  const orderedExprs = [...subExprs, mainExpr];
-
-  const table = document.createElement('table');
-  const thead = document.createElement('thead');
-  const tbody = document.createElement('tbody');
-
-  const headerRow = document.createElement('tr');
-  variables.forEach(v => {
-    const th = document.createElement('th');
-    th.textContent = v;
-    headerRow.appendChild(th);
-  });
-  orderedExprs.forEach(expr => {
-    const th = document.createElement('th');
-    th.textContent = expr;
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
-
-  for (let i = numRows - 1; i >= 0; i--) {
-    const row = document.createElement('tr');
-    const values = {};
-
-    variables.forEach((v, j) => {
-      values[v] = Boolean(i & (1 << (variables.length - 1 - j)));
-      const td = document.createElement('td');
-      td.textContent = values[v] ? 'T' : 'F';
-      td.className = values[v] ? 'true' : 'false';
-      row.appendChild(td);
-    });
-
-    orderedExprs.forEach(expr => {
-      const ev = evaluateStepByStep(expr, values);
-      const td = document.createElement('td');
-      td.textContent = ev.result ? 'T' : 'F';
-      td.className = ev.result ? 'true' : 'false';
-      row.appendChild(td);
-    });
-
-    tbody.appendChild(row);
-  }
-
-  table.appendChild(thead);
-  table.appendChild(tbody);
-  container.appendChild(table);        // ✅ สำคัญ: อยู่ใน .table-container
-  return table;
+/* =========================
+   Evaluate & Truth Table
+   ========================= */
+/** ดึงตัวแปรจากนิพจน์ (p,q,r,s) */
+function extractVariables(expression) {
+  const matches = expression.match(/[pqrs]/g) || [];
+  return [...new Set(matches)].sort();
 }
 
-// -------------------------
-// Expression analysis helpers
-// -------------------------
-function getSubExpressions(expression) {
-  const result = [];
-
-  const variables = expression.match(/[pqrs]/g) || [];
-  [...new Set(variables)].sort().forEach(v => result.push(v));
-
-  const negations = expression.match(/~[pqrs]/g) || [];
-  negations.forEach(neg => { if (!result.includes(neg)) result.push(neg); });
-
-  const bracketRegex = /\(([^\(\)]+)\)/g;
-  let m;
-  while ((m = bracketRegex.exec(expression)) !== null) {
-    const inner = m[1];
-    if (!result.includes(inner)) result.push(inner);
-  }
-
-  const negBrackets = expression.match(/~\([^\(\)]+\)/g) || [];
-  negBrackets.forEach(nb => { if (!result.includes(nb)) result.push(nb); });
-
-  if (!expression.includes('(')) {
-    const ops = ['∧', '∨', '→', '↔', '⊕'];
-
-    for (let op of ops) {
-      const opRegex = new RegExp(`([^${ops.join('')}~()]+)\\${op}`, 'g');
-      let mm;
-      while ((mm = opRegex.exec(expression)) !== null) {
-        const left = mm[1].trim();
-        if (left && !result.includes(left) && left !== expression) result.push(left);
-      }
-    }
-
-    for (let op of ops) {
-      if (expression.includes(op)) {
-        const parts = expression.split(op);
-        for (let i = 0; i < parts.length - 1; i++) {
-          let subExpr =
-            parts.slice(0, i + 1).join(op) +
-            op +
-            parts[i + 1].split(ops.find(o => o !== op && parts[i + 1].includes(o)) || '')[0];
-          subExpr = subExpr.replace(/[∧∨→↔⊕]$/, '').trim();
-          if (
-            subExpr &&
-            !result.includes(subExpr) &&
-            subExpr !== expression &&
-            subExpr.match(/[pqrs~]+[∧∨→↔⊕][pqrs~]+/)
-          ) {
-            result.push(subExpr);
-          }
-        }
-        break;
-      }
-    }
-  }
-
-  if (!result.includes(expression)) result.push(expression);
-  return result;
-}
-
-function evaluateStepByStep(expression, values) {
-  let steps = [];
-  let current = expression;
-
-  for (const [variable, value] of Object.entries(values)) {
-    const regex = new RegExp(variable, 'g');
-    current = current.replace(regex, value ? 'T' : 'F');
-  }
-  steps.push(`แทนค่าตัวแปร: ${current}`);
-
-  let iteration = 0;
-  while (current.includes('(') && iteration < 50) {
-    iteration++;
-    const innerMatch = current.match(/\([^()]*\)/);
-    if (innerMatch) {
-      const innerExpr = innerMatch[0];
-      const innerContent = innerExpr.slice(1, -1);
-      const innerResult = evaluateSimpleExpression(innerContent);
-      current = current.replace(innerExpr, innerResult ? 'T' : 'F');
-      steps.push(`${innerExpr} = ${innerResult ? 'T' : 'F'} ≡ ${current}`);
-    } else break;
-  }
-
-  while (containsOperator(current) && iteration < 200) {
-    iteration++;
-    const oldCurrent = current;
-    current = evaluateNextOperation(current);
-    if (current !== oldCurrent) steps.push(`${oldCurrent} ≡ ${current}`);
-    else break;
-  }
-
-  return { result: current === 'T', steps };
-}
-
+/** ตรวจว่ามีตัวดำเนินการอยู่ไหม */
 function containsOperator(expr) {
   return /[~∧∨→↔⊕]/.test(expr);
 }
 
-function evaluateNextOperation(expr) {
-  if (expr.includes('~')) {
-    return expr.replace(/~([TF])/g, (m, p1) => (p1 === 'T' ? 'F' : 'T'));
+/** ประเมินขั้นต่อไป ตาม precedence: ~ → ∧ → ∨ → → → ↔ → ⊕ */
+function evalNext(expr) {
+  // NOT (~)
+  if (/~[TF]/.test(expr)) {
+    return expr.replace(/~([TF])/g, (_, a) => (a === "T" ? "F" : "T"));
   }
-  if (expr.includes('∧')) {
-    return expr.replace(/([TF])\s*∧\s*([TF])/g, (m, a, b) => (a === 'T' && b === 'T' ? 'T' : 'F'));
+  // AND
+  if (/[TF]\s*∧\s*[TF]/.test(expr)) {
+    return expr.replace(/([TF])\s*∧\s*([TF])/g, (_, a, b) =>
+      a === "T" && b === "T" ? "T" : "F"
+    );
   }
-  if (expr.includes('∨')) {
-    return expr.replace(/([TF])\s*∨\s*([TF])/g, (m, a, b) => (a === 'T' || b === 'T' ? 'T' : 'F'));
+  // OR
+  if (/[TF]\s*∨\s*[TF]/.test(expr)) {
+    return expr.replace(/([TF])\s*∨\s*([TF])/g, (_, a, b) =>
+      a === "T" || b === "T" ? "T" : "F"
+    );
   }
-  if (expr.includes('→')) {
-    return expr.replace(/([TF])\s*→\s*([TF])/g, (m, a, b) => (a === 'F' || b === 'T' ? 'T' : 'F'));
+  // IMPLIES
+  if (/[TF]\s*→\s*[TF]/.test(expr)) {
+    return expr.replace(/([TF])\s*→\s*([TF])/g, (_, a, b) =>
+      a === "F" || b === "T" ? "T" : "F"
+    );
   }
-  if (expr.includes('↔')) {
-    return expr.replace(/([TF])\s*↔\s*([TF])/g, (m, a, b) => (a === b ? 'T' : 'F'));
+  // IFF
+  if (/[TF]\s*↔\s*[TF]/.test(expr)) {
+    return expr.replace(/([TF])\s*↔\s*([TF])/g, (_, a, b) =>
+      a === b ? "T" : "F"
+    );
   }
-  if (expr.includes('⊕')) {
-    return expr.replace(/([TF])\s*⊕\s*([TF])/g, (m, a, b) => (a !== b ? 'T' : 'F'));
+  // XOR
+  if (/[TF]\s*⊕\s*[TF]/.test(expr)) {
+    return expr.replace(/([TF])\s*⊕\s*([TF])/g, (_, a, b) =>
+      a !== b ? "T" : "F"
+    );
   }
   return expr;
 }
 
-function evaluateSimpleExpression(expr) {
-  let current = expr;
-  let iteration = 0;
-  while (containsOperator(current) && iteration < 200) {
-    iteration++;
-    const oldCurrent = current;
-    current = evaluateNextOperation(current);
-    if (current === oldCurrent) break;
+/** ประเมินนิพจน์ย่อยที่เป็น TF + operators */
+function evaluateSimpleTF(expr) {
+  let cur = expr;
+  let guard = 0;
+  while (containsOperator(cur) && guard++ < 50) {
+    const next = evalNext(cur);
+    if (next === cur) break;
+    cur = next;
   }
-  return current === 'T';
+  return cur === "T";
 }
 
-function extractVariables(expression) {
-  const matches = expression.match(/[pqrs]/g);
-  if (matches) return [...new Set(matches)].sort();
-  return [];
+/** ประเมินนิพจน์เต็ม พร้อมแทนค่าตัวแปรและวงเล็บ */
+function evaluateWithValues(expression, values) {
+  let cur = expression;
+
+  // แทนค่าตัวแปร p,q,r,s เป็น T/F
+  for (const [v, val] of Object.entries(values)) {
+    cur = cur.replace(new RegExp(v, "g"), val ? "T" : "F");
+  }
+
+  // ประเมินวงเล็บจากในสุดออกนอก
+  let safety = 0;
+  while (/\([^()]*\)/.test(cur) && safety++ < 50) {
+    cur = cur.replace(/\([^()]*\)/g, (m) => {
+      const inner = m.slice(1, -1);
+      const res = evaluateSimpleTF(inner);
+      return res ? "T" : "F";
+    });
+  }
+
+  // ประเมินส่วนที่เหลือ
+  const final = evaluateSimpleTF(cur);
+  return final;
 }
+
+/** สร้างตารางค่าความจริง */
+function generateTruthTable() {
+  const expr = currentExpression.trim();
+  const headerRow = tableHeaderEl();
+  const body = tableBodyEl();
+  if (!headerRow || !body) return;
+
+  headerRow.innerHTML = "";
+  body.innerHTML = "";
+
+  if (!expr) return;
+
+  const vars = extractVariables(expr);
+  const n = vars.length;
+  const rows = Math.pow(2, n);
+
+  // Header: ตัวแปร + นิพจน์หลัก
+  for (const v of vars) {
+    const th = document.createElement("th");
+    th.textContent = v;
+    headerRow.appendChild(th);
+  }
+  const thExpr = document.createElement("th");
+  thExpr.textContent = expr;
+  headerRow.appendChild(thExpr);
+
+  // สร้างข้อมูลแถว
+  for (let i = rows - 1; i >= 0; i--) {
+    const tr = document.createElement("tr");
+    const values = {};
+    for (let j = 0; j < n; j++) {
+      const val = Boolean(i & (1 << (n - 1 - j)));
+      values[vars[j]] = val;
+
+      const td = document.createElement("td");
+      td.textContent = val ? "T" : "F";
+      td.className = val ? "true" : "false";
+      tr.appendChild(td);
+    }
+
+    const resultVal = evaluateWithValues(expr, values);
+    const tdRes = document.createElement("td");
+    tdRes.textContent = resultVal ? "T" : "F";
+    tdRes.className = resultVal ? "true" : "false";
+    tr.appendChild(tdRes);
+
+    body.appendChild(tr);
+  }
+}
+
+/** ปุ่มคำนวณ */
+function evaluateExpression() {
+  const expr = currentExpression.trim();
+  if (!expr) return;
+
+  const vars = extractVariables(expr);
+  if (vars.length === 0) {
+    showResult('<span style="color:#e11d48">ไม่พบตัวแปรในสูตร</span>');
+    return;
+  }
+
+  // ตรวจสัจนิรันดร์
+  const rows = Math.pow(2, vars.length);
+  let isTautology = true;
+  for (let i = 0; i < rows; i++) {
+    const values = {};
+    for (let j = 0; j < vars.length; j++) {
+      values[vars[j]] = Boolean(i & (1 << (vars.length - 1 - j)));
+    }
+    const ok = evaluateWithValues(expr, values);
+    if (!ok) {
+      isTautology = false;
+      break;
+    }
+  }
+
+  showResult(
+    `<div><strong>สูตร:</strong> ${expr}</div>
+     <div><strong>ตัวแปร:</strong> ${vars.join(", ")}</div>
+     <div><strong>สถานะ:</strong> <span style="color:${isTautology ? "#16a34a" : "#e11d48"}">${isTautology ? "เป็นสัจนิรันดร์" : "ไม่เป็นสัจนิรันดร์"}</span></div>`
+  );
+
+  if (truthTableVisible) generateTruthTable();
+}
+
+/** เปิด/ปิดตาราง */
+function toggleTruthTable() {
+  truthTableVisible = !truthTableVisible;
+  const box = truthBoxEl();
+  const txt = toggleTextEl();
+  if (!box || !txt) return;
+
+  if (truthTableVisible) {
+    box.hidden = false;
+    txt.textContent = "ปิดตารางค่าความจริง";
+    generateTruthTable();
+  } else {
+    box.hidden = true;
+    txt.textContent = "เปิดตารางค่าความจริง";
+  }
+}
+
+/* =========================
+   Input events
+   ========================= */
+document.addEventListener("DOMContentLoaded", () => {
+  const input = displayEl();
+  if (!input) return;
+
+  input.addEventListener("input", function () {
+    currentExpression = this.value;
+    cursorPosition = this.selectionStart || currentExpression.length;
+    if (truthTableVisible) generateTruthTable();
+  });
+  input.addEventListener("click", function () {
+    cursorPosition = this.selectionStart || 0;
+  });
+  input.addEventListener("keyup", function () {
+    cursorPosition = this.selectionStart || 0;
+  });
+});
+
+/* =========================
+   PWA & Update Banner
+   ========================= */
+let deferredPrompt = null;
+
+/** ปุ่มติดตั้งแอพ */
+function installApp() {
+  if (!deferredPrompt) {
+    alert("กรุณาเพิ่มเว็บไซต์นี้ไปยังหน้าจอหลักผ่านเมนูของเบราว์เซอร์");
+    return;
+  }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.finally(() => (deferredPrompt = null));
+}
+
+/** ติดตั้ง Service Worker + แบนเนอร์อัปเดต */
+window.addEventListener("load", async () => {
+  // beforeinstallprompt
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById("installButton");
+    if (btn) btn.style.display = "inline-flex";
+  });
+  window.addEventListener("appinstalled", () => {
+    const btn = document.getElementById("installButton");
+    if (btn) btn.style.display = "none";
+  });
+
+  if ("serviceWorker" in navigator) {
+    const reg = await navigator.serviceWorker.register("./sw.js");
+
+    const banner = document.getElementById("updateBanner");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const showBanner = () => banner && (banner.hidden = false);
+    const hideBanner = () => banner && (banner.hidden = true);
+
+    // มี SW ใหม่ waiting แล้ว → แสดงแบนเนอร์
+    if (reg.waiting) showBanner();
+
+    // เจอ SW ใหม่ระหว่างใช้งาน
+    reg.addEventListener("updatefound", () => {
+      const newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener("statechange", () => {
+        if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+          showBanner();
+        }
+      });
+    });
+
+    // กด “อัปเดตตอนนี้”
+    if (refreshBtn) {
+      refreshBtn.onclick = async () => {
+        const latest = await navigator.serviceWorker.getRegistration();
+        if (!latest) return;
+
+        if (latest.waiting) {
+          latest.waiting.postMessage({ type: "SKIP_WAITING" });
+          return;
+        }
+        await latest.update();
+      };
+    }
+
+    // เมื่อ SW ตัวใหม่เข้ามาคุมหน้า → รีโหลด
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      hideBanner();
+      setTimeout(() => location.reload(), 50);
+    });
+  }
+});
+
+/* ส่งฟังก์ชันไว้ให้ปุ่มเรียกใช้ (ถ้า bundler ไม่มี) */
+window.addToDisplay = addToDisplay;
+window.clearDisplay = clearDisplay;
+window.backspace = backspace;
+window.moveCursorLeft = moveCursorLeft;
+window.moveCursorRight = moveCursorRight;
+window.evaluateExpression = evaluateExpression;
+window.toggleTruthTable = toggleTruthTable;
+window.installApp = installApp;
