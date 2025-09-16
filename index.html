@@ -11,6 +11,46 @@
   <link rel="apple-touch-icon" href="./icon-192.png" />
   <meta name="theme-color" content="#764ba2" />
 </head>
+
+<script>
+  // แสดง error เป็นแถบสีแดงบนหน้า
+  window.onerror = function (msg, src, line, col) {
+    const box = document.createElement('pre');
+    box.style.position = 'fixed';
+    box.style.left = '8px';
+    box.style.right = '8px';
+    box.style.bottom = '8px';
+    box.style.zIndex = 99999;
+    box.style.background = '#fee2e2';
+    box.style.color = '#b91c1c';
+    box.style.border = '1px solid #ef4444';
+    box.style.borderRadius = '10px';
+    box.style.padding = '8px';
+    box.style.maxHeight = '40vh';
+    box.style.overflow = 'auto';
+    box.textContent = `JS Error:\n${msg}\n${src}:${line}:${col}`;
+    document.body.appendChild(box);
+  };
+
+  // บัตรสถานะว่า JS โหลดแล้ว
+  window.addEventListener('DOMContentLoaded', () => {
+    const tag = document.createElement('div');
+    tag.style.position = 'fixed';
+    tag.style.top = '8px';
+    tag.style.right = '8px';
+    tag.style.zIndex = 99998;
+    tag.style.background = '#dcfce7';
+    tag.style.color = '#166534';
+    tag.style.border = '1px solid #16a34a';
+    tag.style.borderRadius = '999px';
+    tag.style.padding = '4px 10px';
+    tag.style.fontSize = '12px';
+    tag.textContent = 'JS loaded';
+    document.body.appendChild(tag);
+    setTimeout(() => tag.remove(), 4000);
+  });
+</script>
+  
 <body>
   <div class="container">
     <h1>🧮 เครื่องคิดเลขตรรกศาสตร์</h1>
