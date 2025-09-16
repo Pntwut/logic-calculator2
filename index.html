@@ -46,6 +46,14 @@
           <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
         </div>
 
+        <!-- Quick Examples -->
+        <div class="examples">
+          <p><strong>สูตรตัวอย่าง:</strong></p>
+          <button class="button btn-operator" onclick="quickInsert('(p∧q)→r')">(p∧q)→r</button>
+          <button class="button btn-operator" onclick="quickInsert('~p∨q')">~p∨q</button>
+          <button class="button btn-operator" onclick="quickInsert('p↔q')">p↔q</button>
+        </div>
+
         <div class="under-controls">
           <button class="button btn-toggle" onclick="toggleTruthTable()">
             <span id="toggleText">เปิดตารางค่าความจริง</span>
@@ -64,6 +72,19 @@
           <thead><tr id="tableHeader"></tr></thead>
           <tbody id="tableBody"></tbody>
         </table>
+      </div>
+      <button class="button btn-equals" onclick="downloadCSV()">⬇ ดาวน์โหลดตาราง (CSV)</button>
+    </div>
+
+    <!-- ข้อความช่วยติดตั้ง (กรณีไม่มี install prompt) -->
+    <div id="installHelp" hidden></div>
+  </div>
+
+  <!-- JS -->
+  <script src="./script.js?v=9" defer></script>
+  <script src="./pwa.js?v=9" defer></script>
+</body>
+</html>        </table>
       </div>
     </div>
 
