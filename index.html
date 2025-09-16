@@ -6,52 +6,52 @@
   <title>เครื่องคิดเลขตรรกศาสตร์</title>
 
   <!-- Styles & PWA -->
-  <link rel="stylesheet" href="./styles.css?v=9" />
+  <link rel="stylesheet" href="./styles.css?v=11" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
   <meta name="theme-color" content="#764ba2" />
 </head>
-
-<script>
-  // แสดง error เป็นแถบสีแดงบนหน้า
-  window.onerror = function (msg, src, line, col) {
-    const box = document.createElement('pre');
-    box.style.position = 'fixed';
-    box.style.left = '8px';
-    box.style.right = '8px';
-    box.style.bottom = '8px';
-    box.style.zIndex = 99999;
-    box.style.background = '#fee2e2';
-    box.style.color = '#b91c1c';
-    box.style.border = '1px solid #ef4444';
-    box.style.borderRadius = '10px';
-    box.style.padding = '8px';
-    box.style.maxHeight = '40vh';
-    box.style.overflow = 'auto';
-    box.textContent = `JS Error:\n${msg}\n${src}:${line}:${col}`;
-    document.body.appendChild(box);
-  };
-
-  // บัตรสถานะว่า JS โหลดแล้ว
-  window.addEventListener('DOMContentLoaded', () => {
-    const tag = document.createElement('div');
-    tag.style.position = 'fixed';
-    tag.style.top = '8px';
-    tag.style.right = '8px';
-    tag.style.zIndex = 99998;
-    tag.style.background = '#dcfce7';
-    tag.style.color = '#166534';
-    tag.style.border = '1px solid #16a34a';
-    tag.style.borderRadius = '999px';
-    tag.style.padding = '4px 10px';
-    tag.style.fontSize = '12px';
-    tag.textContent = 'JS loaded';
-    document.body.appendChild(tag);
-    setTimeout(() => tag.remove(), 4000);
-  });
-</script>
-  
 <body>
+  <!-- ============ ERROR OVERLAY (เอาไว้ดีบัก ชั่วคราว) ============ -->
+  <script>
+    // แสดง error เป็นแถบสีแดงบนหน้า (ลบได้ภายหลัง)
+    window.onerror = function (msg, src, line, col) {
+      const box = document.createElement('pre');
+      box.style.position = 'fixed';
+      box.style.left = '8px';
+      box.style.right = '8px';
+      box.style.bottom = '8px';
+      box.style.zIndex = 99999;
+      box.style.background = '#fee2e2';
+      box.style.color = '#b91c1c';
+      box.style.border = '1px solid #ef4444';
+      box.style.borderRadius = '10px';
+      box.style.padding = '8px';
+      box.style.maxHeight = '40vh';
+      box.style.overflow = 'auto';
+      box.textContent = `JS Error:\n${msg}\n${src}:${line}:${col}`;
+      document.body.appendChild(box);
+    };
+    // ป้าย “JS loaded”
+    window.addEventListener('DOMContentLoaded', () => {
+      const tag = document.createElement('div');
+      tag.style.position = 'fixed';
+      tag.style.top = '8px';
+      tag.style.right = '8px';
+      tag.style.zIndex = 99998;
+      tag.style.background = '#dcfce7';
+      tag.style.color = '#166534';
+      tag.style.border = '1px solid #16a34a';
+      tag.style.borderRadius = '999px';
+      tag.style.padding = '4px 10px';
+      tag.style.fontSize = '12px';
+      tag.textContent = 'JS loaded';
+      document.body.appendChild(tag);
+      setTimeout(() => tag.remove(), 3000);
+    });
+  </script>
+  <!-- =========================================================== -->
+
   <div class="container">
     <h1>🧮 เครื่องคิดเลขตรรกศาสตร์</h1>
 
@@ -64,6 +64,67 @@
           <!-- Variables -->
           <button class="button btn-variable" onclick="addToDisplay('p')">p</button>
           <button class="button btn-variable" onclick="addToDisplay('q')">q</button>
+          <button class="button btn-variable" onclick="addToDisplay('r')">r</button>
+          <button class="button btn-variable" onclick="addToDisplay('s')">s</button>
+
+          <!-- Operators -->
+          <button class="button btn-operator" onclick="addToDisplay('∧')">∧</button>
+          <button class="button btn-operator" onclick="addToDisplay('∨')">∨</button>
+          <button class="button btn-operator" onclick="addToDisplay('~')">~</button>
+          <button class="button btn-operator" onclick="addToDisplay('→')">→</button>
+          <button class="button btn-operator" onclick="addToDisplay('↔')">↔</button>
+
+          <!-- Parentheses -->
+          <button class="button btn-paren" onclick="addToDisplay('(')">(</button>
+          <button class="button btn-paren" onclick="addToDisplay(')')">)</button>
+
+          <!-- Actions -->
+          <button class="button btn-warn" onclick="clearDisplay()">ล้าง</button>
+          <button class="button btn-warn" onclick="backspace()">ลบ</button>
+          <button class="button btn-nav" onclick="moveCursorLeft()">←</button>
+          <button class="button btn-nav" onclick="moveCursorRight()">→</button>
+          <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
+        </div>
+
+        <!-- Quick Examples -->
+        <div class="examples">
+          <p><strong>สูตรตัวอย่าง:</strong></p>
+          <button class="button btn-operator" onclick="quickInsert('(p∧q)→r')">(p∧q)→r</button>
+          <button class="button btn-operator" onclick="quickInsert('~p∨q')">~p∨q</button>
+          <button class="button btn-operator" onclick="quickInsert('p↔q')">p↔q</button>
+        </div>
+
+        <div class="under-controls">
+          <button class="button btn-toggle" onclick="toggleTruthTable()">
+            <span id="toggleText">เปิดตารางค่าความจริง</span>
+          </button>
+          <button class="button btn-install" id="installButton" onclick="installApp()" style="display:none">
+            📱 ติดตั้งแอพ
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="truth-table" id="truthTable" style="display:none">
+      <h3>ตารางค่าความจริง</h3>
+      <div class="table-container">
+        <table id="truthTableContent">
+          <thead><tr id="tableHeader"></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <button class="button btn-equals" onclick="downloadCSV()">⬇ ดาวน์โหลดตาราง (CSV)</button>
+    </div>
+
+    <!-- ข้อความช่วยติดตั้ง (กรณีไม่มี install prompt) -->
+    <div id="installHelp" hidden></div>
+  </div>
+
+  <!-- JS (อย่าใส่ซ้ำ) -->
+  <script src="./script.js?v=11" defer></script>
+  <script src="./pwa.js?v=11" defer></script>
+</body>
+</html>          <button class="button btn-variable" onclick="addToDisplay('q')">q</button>
           <button class="button btn-variable" onclick="addToDisplay('r')">r</button>
           <button class="button btn-variable" onclick="addToDisplay('s')">s</button>
 
