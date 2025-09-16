@@ -67,52 +67,12 @@
       </div>
     </div>
 
-    <!-- ข้อความช่วยติดตั้ง (จะแสดงอัตโนมัติเมื่อ install prompt ใช้ไม่ได้) -->
+    <!-- ข้อความช่วยติดตั้ง (แสดงเมื่อไม่มี install prompt) -->
     <div id="installHelp" hidden></div>
   </div>
 
-  <!-- JS -->
+  <!-- JS (อย่าใส่ซ้ำ) -->
   <script src="./script.js" defer></script>
   <script src="./pwa.js" defer></script>
-</body>
-</html>    </div>
-
-    <!-- Install Help Message -->
-    <div id="installHelp" hidden></div>
-  </div>
-
-  <!-- JS -->
-  <script src="./script.js" defer></script>
-  <script src="./pwa.js" defer></script>
-</body>
-</html>
-  <!-- Install Help Message -->
-  <div id="installHelp" hidden></div>
-
-  <script src="./script.js" defer></script>
-  <script src="./pwa.js" defer></script>
-</body>
-</html>      </div>
-    </div>
-  </div>
-
-  <!-- JS หลัก -->
-  <script src="./script.js" defer></script>
-
-  <!-- PWA: ติดตั้ง + ลงทะเบียน SW แบบเงียบ (ไม่มีแบนเนอร์) -->
-  <script>
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault(); deferredPrompt = e;
-      const btn = document.getElementById('installButton'); if (btn) btn.style.display = 'inline-flex';
-    });
-    function installApp(){
-      if(!deferredPrompt){ alert('เพิ่มเว็บไซต์นี้ไปยังหน้าจอหลักจากเมนูเบราว์เซอร์'); return; }
-      deferredPrompt.prompt(); deferredPrompt.userChoice.finally(()=> deferredPrompt=null);
-    }
-    window.addEventListener('load', async () => {
-      if ('serviceWorker' in navigator) { try { await navigator.serviceWorker.register('./sw.js'); } catch(e){} }
-    });
-  </script>
 </body>
 </html>
