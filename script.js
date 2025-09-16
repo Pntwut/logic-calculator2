@@ -1,69 +1,79 @@
-/* ===== Logic Calculator + Subexpression Columns + Download CSV ===== */
-
-let currentExpression = "";
+let currentExpression = '';
 let cursorPosition = 0;
 let truthTableVisible = false;
 
-/* DOM helpers */
-const $ = (s)=>document.querySelector(s);
-const displayEl = ()=>$("#display");
-const resultEl  = ()=>$("#resultDisplay");
-const truthBox  = ()=>$("#truthTable");
-const tHead     = ()=>$("#tableHeader");
-const tBody     = ()=>$("#tableBody");
-const toggleTxt = ()=>$("#toggleText");
-
-/* UI */
-function updateDisplay(){
-  const el = displayEl(); if(!el) return;
-  el.value = currentExpression;
-  el.setSelectionRange(cursorPosition,cursorPosition);
-  el.focus();
+function addToDisplay(value) {
+  const display = document.getElementById('display');
+  currentExpression = display.value.slice(0, cursorPosition) + value + display.value.slice(cursorPosition);
+  cursorPosition += value.length;
+  updateDisplay();
+  if (truthTableVisible) generateTruthTable();
 }
-function addToDisplay(v){
-  currentExpression = currentExpression.slice(0,cursorPosition)+v+currentExpression.slice(cursorPosition);
-  cursorPosition += v.length; updateDisplay();
-  if(truthTableVisible) generateTruthTable();
-}
-function clearDisplay(){ currentExpression=""; cursorPosition=0; updateDisplay(); hideResult(); if(truthTableVisible) generateTruthTable(); }
-function backspace(){ if(cursorPosition>0){ currentExpression=currentExpression.slice(0,cursorPosition-1)+currentExpression.slice(cursorPosition); cursorPosition--; updateDisplay(); if(truthTableVisible) generateTruthTable(); } }
-function moveCursorLeft(){ if(cursorPosition>0){ cursorPosition--; updateDisplay(); } }
-function moveCursorRight(){ if(cursorPosition<currentExpression.length){ cursorPosition++; updateDisplay(); } }
-function showResult(html){ const el=resultEl(); if(!el) return; el.innerHTML=html; el.classList.add("show"); }
-function hideResult(){ const el=resultEl(); if(!el) return; el.innerHTML=""; el.classList.remove("show"); }
 
-/* Logic helpers */
-function extractVariables(expr){ const m=expr.match(/[pqrs]/g)||[]; return [...new Set(m)].sort(); }
-function containsOperator(expr){ return /[~∧∨→↔]/.test(expr); } // ไม่มี ⊕ แล้ว
-
-function evalNext(expr){
-  if(/~[TF]/.test(expr)) return expr.replace(/~([TF])/g,(_,a)=>a==="T"?"F":"T");
-  if(/[TF]\s*∧\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*∧\s*([TF])/g,(_,a,b)=>a==="T"&&b==="T"?"T":"F");
-  if(/[TF]\s*∨\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*∨\s*([TF])/g,(_,a,b)=>a==="T"||b==="T"?"T":"F");
-  if(/[TF]\s*→\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*→\s*([TF])/g,(_,a,b)=>a==="F"||b==="T"?"T":"F");
-  if(/[TF]\s*↔\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*↔\s*([TF])/g,(_,a,b)=>a===b?"T":"F");
-  return expr;
+function updateDisplay() {
+  const display = document.getElementById('display');
+  display.value = currentExpression;
+  display.setSelectionRange(cursorPosition, cursorPosition);
+  display.focus();
 }
-function evaluateSimpleTF(expr){
-  let cur=expr, guard=0;
-  while(containsOperator(cur) && guard++<50){
-    const next=evalNext(cur); if(next===cur) break; cur=next;
+
+function clearDisplay() {
+  currentExpression = '';
+  cursorPosition = 0;
+  updateDisplay();
+  document.getElementById('resultDisplay').textContent = '';
+  if (truthTableVisible) generateTruthTable();
+}
+
+function backspace() {
+  if (cursorPosition > 0) {
+    currentExpression = currentExpression.slice(0, cursorPosition - 1) + currentExpression.slice(cursorPosition);
+    cursorPosition--;
+    updateDisplay();
+    if (truthTableVisible) generateTruthTable();
   }
-  return cur==="T";
-}
-function evaluateWithValues(expression, values){
-  let cur=expression;
-  for(const [v,val] of Object.entries(values)){ cur = cur.replace(new RegExp(v,"g"), val?"T":"F"); }
-  let i=0;
-  while(/\([^()]*\)/.test(cur) && i++<50){
-    cur = cur.replace(/\([^()]*\)/g, m => evaluateSimpleTF(m.slice(1,-1)) ? "T":"F");
-  }
-  return evaluateSimpleTF(cur);
 }
 
-/* ---------- สร้างรายการ "นิพจน์ย่อย" จากนิพจน์เต็ม ---------- */
-/* เป้าหมาย: ได้คอลัมน์ = [variables..., subExprs..., fullExpr] */
-function getSubExpressions(expression){
+function moveCursorLeft() { if (cursorPosition > 0) cursorPosition--; updateDisplay(); }
+function moveCursorRight() { if (cursorPosition < currentExpression.length) cursorPosition++; updateDisplay(); }
+
+function toggleTruthTable() {
+  truthTableVisible = !truthTableVisible;
+  const truthTable = document.getElementById('truthTable');
+  const toggleText = document.getElementById('toggleText');
+  if (truthTableVisible) { truthTable.style.display = 'block'; toggleText.textContent = 'ปิดตารางค่าความจริง'; generateTruthTable(); }
+  else { truthTable.style.display = 'none'; toggleText.textContent = 'เปิดตารางค่าความจริง'; }
+}
+
+function evaluateExpression() {
+  const resultDisplay = document.getElementById('resultDisplay');
+  if (!currentExpression) { resultDisplay.textContent = 'กรุณากรอกสูตร'; return; }
+  resultDisplay.textContent = 'ยังไม่รองรับการตรวจสัจนิรันดร์ (Demo)';
+}
+
+function generateTruthTable() {
+  const tableHeader = document.getElementById('tableHeader');
+  const tableBody = document.getElementById('tableBody');
+  tableHeader.innerHTML = '';
+  tableBody.innerHTML = '';
+
+  const variables = [...new Set(currentExpression.match(/[pqrs]/g) || [])];
+  if (variables.length === 0) return;
+
+  variables.forEach(v => { const th = document.createElement('th'); th.textContent = v; tableHeader.appendChild(th); });
+  const thExpr = document.createElement('th'); thExpr.textContent = currentExpression; tableHeader.appendChild(thExpr);
+
+  const numRows = Math.pow(2, variables.length);
+  for (let i = 0; i < numRows; i++) {
+    const row = document.createElement('tr');
+    const values = {};
+    variables.forEach((v, j) => { values[v] = Boolean(i & (1 << (variables.length - 1 - j))); 
+      const td = document.createElement('td'); td.textContent = values[v] ? 'T' : 'F'; td.className = values[v] ? 'true' : 'false'; row.appendChild(td); 
+    });
+    const tdExpr = document.createElement('td'); tdExpr.textContent = '…'; row.appendChild(tdExpr);
+    tableBody.appendChild(row);
+  }
+}function getSubExpressions(expression){
   const out = new Set();
 
   // 1) ตัวแปรเดี่ยว
@@ -226,3 +236,4 @@ window.moveCursorRight=moveCursorRight;
 window.evaluateExpression=evaluateExpression;
 window.toggleTruthTable=toggleTruthTable;
 window.downloadTruthTable=downloadTruthTable;
+
