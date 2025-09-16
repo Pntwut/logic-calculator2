@@ -2,102 +2,81 @@
 // Logic Calculator – script.js
 // -----------------------------
 
-// ===== Utilities =====
 const $ = (id) => document.getElementById(id);
 
-// จับตัวแปรที่อนุญาต (p q r s)
 const VAR_RE = /[pqrs]/g;
 
-// ลำดับความสำคัญของตัวดำเนินการ (ยิ่งมากยิ่งมาก่อน)
 const PREC = {
-  '~': 5,   // NOT (unary)
-  '∧': 4,   // AND
-  '∨': 3,   // OR
-  '→': 2,   // IMPLIES
-  '↔': 1    // IFF
+  '~': 5,
+  '∧': 4,
+  '∨': 3,
+  '→': 2,
+  '↔': 1
 };
 
-// เป็นตัวดำเนินการไหม
 const isOp = (t) => ['~', '∧', '∨', '→', '↔'].includes(t);
 
-// ===== Expression helpers =====
-
-// ตัดช่องว่าง + แปลงเครื่องหมายทั่วไปให้เป็นสัญลักษณ์มาตรฐาน
+// =================== Normalize & Tokenize ===================
 function normalizeExpr(expr) {
-  return String(expr || '')
+  return expr
     .replace(/\s+/g, '')
-    .replace(/<->|↔|<−>|<\->/g, '↔')
-    .replace(/->|→/g, '→')
+    .replace(/<->/g, '↔')
+    .replace(/->/g, '→')
     .replace(/\^\^/g, '∧')
     .replace(/\|\|/g, '∨');
 }
 
-// ดึงตัวแปรจากนิพจน์
 function extractVariables(expr) {
   const m = (expr.match(VAR_RE) || []);
-  return [...new Set(m)].sort(); // ไม่ซ้ำ + เรียง
+  return [...new Set(m)].sort();
 }
 
-// แปลงนิพจน์เป็นโทเคน
 function tokenize(expr) {
   const out = [];
   for (let i = 0; i < expr.length; i++) {
     const c = expr[i];
     if ('pqrs'.includes(c)) out.push(c);
-    else if (c === '(' || c === ')') out.push(c);
-    else if (['~', '∧', '∨', '→', '↔'].includes(c)) out.push(c);
-    else {
-      // ข้ามอักขระที่ไม่รู้จัก เพื่อกันพิมพ์ผิด
-    }
+    else if ('()'.includes(c)) out.push(c);
+    else if (['~','∧','∨','→','↔'].includes(c)) out.push(c);
   }
   return out;
 }
 
-// Shunting-yard: infix -> RPN (postfix)
+// =================== Parser (Shunting Yard) ===================
 function toRPN(tokens) {
   const output = [];
   const ops = [];
-  const leftAssoc = (op) => op !== '~'; // ~ เป็น unary (prefix) – จัดเป็น right-associative
+  const leftAssoc = (op) => op !== '~';
 
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
+  for (let t of tokens) {
     if ('pqrs'.includes(t)) {
       output.push(t);
     } else if (t === '(') {
       ops.push(t);
     } else if (t === ')') {
-      while (ops.length && ops[ops.length - 1] !== '(') {
+      while (ops.length && ops[ops.length-1] !== '(') {
         output.push(ops.pop());
       }
-      if (!ops.length) throw new Error('วงเล็บไม่สมดุล');
-      ops.pop(); // remove '('
+      ops.pop();
     } else if (isOp(t)) {
       while (
         ops.length &&
-        isOp(ops[ops.length - 1]) &&
+        isOp(ops[ops.length-1]) &&
         (
-          (leftAssoc(t) && PREC[t] <= PREC[ops[ops.length - 1]]) ||
-          (!leftAssoc(t) && PREC[t] < PREC[ops[ops.length - 1]])
+          (leftAssoc(t) && PREC[t] <= PREC[ops[ops.length-1]]) ||
+          (!leftAssoc(t) && PREC[t] < PREC[ops[ops.length-1]])
         )
       ) {
         output.push(ops.pop());
       }
       ops.push(t);
-    } else {
-      throw new Error('ตัวอักษรไม่ถูกต้องในสูตร');
     }
   }
 
-  while (ops.length) {
-    const op = ops.pop();
-    if (op === '(' || op === ')') throw new Error('วงเล็บไม่สมดุล');
-    output.push(op);
-  }
-
+  while (ops.length) output.push(ops.pop());
   return output;
 }
 
-// ประเมิน RPN ด้วย mapping ของค่าตัวแปร
 function evalRPN(rpn, env) {
   const st = [];
   for (const t of rpn) {
@@ -107,138 +86,141 @@ function evalRPN(rpn, env) {
       const a = st.pop();
       st.push(!a);
     } else if (t === '∧') {
-      const b = st.pop(); const a = st.pop();
+      const b = st.pop(), a = st.pop();
       st.push(a && b);
     } else if (t === '∨') {
-      const b = st.pop(); const a = st.pop();
+      const b = st.pop(), a = st.pop();
       st.push(a || b);
     } else if (t === '→') {
-      const b = st.pop(); const a = st.pop();
+      const b = st.pop(), a = st.pop();
       st.push((!a) || b);
     } else if (t === '↔') {
-      const b = st.pop(); const a = st.pop();
+      const b = st.pop(), a = st.pop();
       st.push(a === b);
-    } else {
-      throw new Error('RPN token ไม่รู้จัก: ' + t);
     }
   }
-  if (st.length !== 1) throw new Error('สูตรไม่ถูกต้อง');
   return st[0];
 }
 
-// ===== UI actions =====
+// =================== Collect Sub-expressions ===================
+function collectSubExpr(rpn) {
+  const stack = [];
+  const subs = [];
 
-// แทรกข้อความลงช่อง input ตามตำแหน่งเคอร์เซอร์
+  for (const t of rpn) {
+    if ('pqrs'.includes(t)) {
+      stack.push(t);
+    } else if (t === '~') {
+      const a = stack.pop();
+      const expr = `~${a}`;
+      stack.push(expr);
+      subs.push(expr);
+    } else if (['∧','∨','→','↔'].includes(t)) {
+      const b = stack.pop();
+      const a = stack.pop();
+      // ถ้า operator มีตัวเดียว ไม่ต้องใส่วงเล็บ
+      let expr;
+      if (!a.includes('→') && !a.includes('↔') && !a.includes('∨') && !a.includes('∧') && !a.startsWith('~') &&
+          !b.includes('→') && !b.includes('↔') && !b.includes('∨') && !b.includes('∧') && !b.startsWith('~')) {
+        expr = `${a}${t}${b}`;
+      } else {
+        expr = `(${a}${t}${b})`;
+      }
+      stack.push(expr);
+      subs.push(expr);
+    }
+  }
+  return subs;
+}
+
+// =================== UI Functions ===================
 function addToDisplay(value) {
-  const display = $('display');
-  if (!display) return;
-  const start = display.selectionStart ?? display.value.length;
-  const end   = display.selectionEnd   ?? display.value.length;
-  const text  = display.value;
-  display.value = text.slice(0, start) + value + text.slice(end);
+  const d = $('display');
+  const start = d.selectionStart ?? d.value.length;
+  const end = d.selectionEnd ?? d.value.length;
+  d.value = d.value.slice(0, start) + value + d.value.slice(end);
   const pos = start + value.length;
-  display.focus();
-  display.setSelectionRange(pos, pos);
+  d.focus();
+  d.setSelectionRange(pos, pos);
 }
 
 function clearDisplay() {
-  const d = $('display');
-  const r = $('resultDisplay');
-  if (d) d.value = '';
-  if (r) r.textContent = '';
-  const tbody = $('tableBody');
-  if (tbody) tbody.innerHTML = '';
+  $('display').value = '';
+  $('resultDisplay').textContent = '';
 }
 
 function backspace() {
-  const display = $('display');
-  if (!display) return;
-  const start = display.selectionStart ?? display.value.length;
-  const end   = display.selectionEnd   ?? display.value.length;
+  const d = $('display');
+  const start = d.selectionStart ?? d.value.length;
+  const end = d.selectionEnd ?? d.value.length;
   if (start === end && start > 0) {
-    display.value = display.value.slice(0, start - 1) + display.value.slice(end);
-    display.setSelectionRange(start - 1, start - 1);
+    d.value = d.value.slice(0, start-1) + d.value.slice(end);
+    d.setSelectionRange(start-1, start-1);
   } else {
-    display.value = display.value.slice(0, start) + display.value.slice(end);
-    display.setSelectionRange(start, start);
+    d.value = d.value.slice(0, start) + d.value.slice(end);
+    d.setSelectionRange(start, start);
   }
-  display.focus();
+  d.focus();
 }
 
 function moveCursorLeft() {
   const d = $('display');
-  if (!d) return;
-  const s = Math.max(0, (d.selectionStart ?? d.value.length) - 1);
+  const s = Math.max(0, (d.selectionStart ?? d.value.length)-1);
   d.setSelectionRange(s, s); d.focus();
 }
 
 function moveCursorRight() {
   const d = $('display');
-  if (!d) return;
-  const s = Math.min(d.value.length, (d.selectionStart ?? d.value.length) + 1);
+  const s = Math.min(d.value.length, (d.selectionStart ?? d.value.length)+1);
   d.setSelectionRange(s, s); d.focus();
 }
 
-// ใส่สูตรตัวอย่าง
 function quickInsert(expr) {
-  const d = $('display');
-  if (!d) return;
-  d.value = expr;
+  $('display').value = expr;
   $('resultDisplay').textContent = '';
   if ($('truthTable').style.display !== 'none') generateTruthTable();
 }
 
-// กด "=" ประเมิน & แสดงสรุป (และอัปเดตตารางถ้าเปิดอยู่)
 function evaluateExpression() {
-  const raw = ($('display')?.value ?? '');
+  const raw = $('display').value;
   const resultDisplay = $('resultDisplay');
-  if (!resultDisplay) return;
 
   try {
     const expr = normalizeExpr(raw);
     const vars = extractVariables(expr);
-    if (vars.length === 0) {
-      resultDisplay.innerHTML = `<span class="error">ไม่พบตัวแปรในสูตร</span>`;
-      return;
-    }
-
-    // เตรียม RPN
     const rpn = toRPN(tokenize(expr));
 
-    // ตรวจว่าเป็นสัจนิรันดร์หรือไม่
+    // ตรวจสัจนิรันดร์
     let tautology = true;
     const rows = 1 << vars.length;
-    for (let i = 0; i < rows; i++) {
-      const env = {};
-      for (let j = 0; j < vars.length; j++) {
-        env[vars[j]] = !!(i & (1 << (vars.length - 1 - j)));
+    for (let i=0;i<rows;i++){
+      const env={};
+      for (let j=0;j<vars.length;j++){
+        env[vars[j]] = !!(i & (1<<(vars.length-1-j)));
       }
-      const v = evalRPN(rpn, env);
-      if (!v) { tautology = false; break; }
+      if (!evalRPN(rpn, env)) { tautology=false; break; }
     }
 
     resultDisplay.innerHTML = `
       <div><strong>สูตร:</strong> ${expr}</div>
       <div><strong>ตัวแปร:</strong> ${vars.join(', ')}</div>
       <div><strong>สถานะ:</strong>
-        <span style="color:${tautology ? '#16a34a' : '#e11d48'}">
-          ${tautology ? 'เป็นสัจนิรันดร์' : 'ไม่เป็นสัจนิรันดร์'}
+        <span style="color:${tautology?'#16a34a':'#e11d48'}">
+          ${tautology?'เป็นสัจนิรันดร์':'ไม่เป็นสัจนิรันดร์'}
         </span>
       </div>
     `;
 
     if ($('truthTable').style.display !== 'none') generateTruthTable();
-  } catch (e) {
+  } catch(e){
     resultDisplay.innerHTML = `<span class="error">สูตรไม่ถูกต้อง</span>`;
     console.error(e);
   }
 }
 
-// เปิด/ปิดตาราง
 function toggleTruthTable() {
-  const box  = $('truthTable');
+  const box = $('truthTable');
   const text = $('toggleText');
-  if (!box || !text) return;
   if (box.style.display === 'none') {
     box.style.display = '';
     text.textContent = 'ปิดตารางค่าความจริง';
@@ -249,12 +231,10 @@ function toggleTruthTable() {
   }
 }
 
-// สร้างตารางค่าความจริง (คอลัมน์: ตัวแปร + นิพจน์สุดท้าย)
 function generateTruthTable() {
-  const raw = $('display')?.value ?? '';
+  const raw = $('display').value;
   const tableHeader = $('tableHeader');
-  const tableBody   = $('tableBody');
-  if (!tableHeader || !tableBody) return;
+  const tableBody = $('tableBody');
 
   tableHeader.innerHTML = '';
   tableBody.innerHTML = '';
@@ -265,100 +245,74 @@ function generateTruthTable() {
     if (vars.length === 0) return;
 
     const rpn = toRPN(tokenize(expr));
+    const subExprs = collectSubExpr(rpn);
+    const columns = [...vars, ...subExprs];
 
-    // header
-    const headerFrag = document.createDocumentFragment();
-    vars.forEach(v => {
-      const th = document.createElement('th');
-      th.textContent = v;
-      headerFrag.appendChild(th);
+    // Header
+    const tr = document.createElement('tr');
+    columns.forEach(c=>{
+      const th=document.createElement('th');
+      th.textContent=c;
+      tr.appendChild(th);
     });
-    const thExpr = document.createElement('th');
-    thExpr.textContent = expr;
-    headerFrag.appendChild(thExpr);
-    tableHeader.appendChild(headerFrag);
+    tableHeader.appendChild(tr);
 
-    // body (จากบนลงล่าง: T..F เหมือนทั่วไป)
-    const rows = 1 << vars.length;
-    for (let i = rows - 1; i >= 0; i--) {
-      const env = {};
-      const tr = document.createElement('tr');
-
-      vars.forEach((v, j) => {
-        const val = !!(i & (1 << (vars.length - 1 - j)));
-        env[v] = val;
-        const td = document.createElement('td');
-        td.textContent = val ? 'T' : 'F';
-        td.className = val ? 'true' : 'false';
-        tr.appendChild(td);
+    const rows = 1<<vars.length;
+    for(let i=rows-1;i>=0;i--){
+      const env={};
+      const tr=document.createElement('tr');
+      vars.forEach((v,j)=>{
+        env[v]=!!(i&(1<<(vars.length-1-j)));
       });
 
-      const res = evalRPN(rpn, env);
-      const tdRes = document.createElement('td');
-      tdRes.textContent = res ? 'T' : 'F';
-      tdRes.className = res ? 'true' : 'false';
-      tr.appendChild(tdRes);
-
+      columns.forEach(c=>{
+        let val;
+        if(vars.includes(c)) val=env[c];
+        else val=evalRPN(toRPN(tokenize(c)), env);
+        const td=document.createElement('td');
+        td.textContent=val?'T':'F';
+        td.className=val?'true':'false';
+        tr.appendChild(td);
+      });
       tableBody.appendChild(tr);
     }
-  } catch (e) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 99;
-    td.textContent = 'ไม่สามารถสร้างตารางได้: สูตรไม่ถูกต้อง';
+  } catch(e){
+    const tr=document.createElement('tr');
+    const td=document.createElement('td');
+    td.colSpan=99;
+    td.textContent='ไม่สามารถสร้างตารางได้: สูตรไม่ถูกต้อง';
     tr.appendChild(td);
     tableBody.appendChild(tr);
     console.error(e);
   }
 }
 
-// ดาวน์โหลด CSV จากตารางปัจจุบัน
 function downloadCSV() {
-  const table = document.getElementById('truthTableContent');
+  const table = $('truthTableContent');
   if (!table) return;
-
   const rows = [...table.querySelectorAll('tr')];
-  const csv = rows.map(row => {
-    const cells = [...row.children].map(c => '"' + c.textContent.replace(/"/g, '""') + '"');
+  const csv = rows.map(r=>{
+    const cells=[...r.children].map(c=>'"'+c.textContent+'"');
     return cells.join(',');
   }).join('\n');
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const expr = normalizeExpr($('display').value) || 'truth-table';
-  a.download = `${expr}.csv`;
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=(normalizeExpr($('display').value)||'truth-table')+'.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-// ===== Keyboard helpers =====
-document.addEventListener('DOMContentLoaded', () => {
-  const d = $('display');
-  if (!d) return;
-  // Enter = evaluate
-  d.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      evaluateExpression();
-    }
-  });
-  // พิมพ์แล้วถ้าตารางเปิดอยู่ให้วาดใหม่
-  d.addEventListener('input', () => {
-    if ($('truthTable').style.display !== 'none') generateTruthTable();
-  });
-});
-
-// ===== expose to window (สำหรับ inline onclick ใน index.html) =====
-window.addToDisplay      = addToDisplay;
-window.clearDisplay      = clearDisplay;
-window.backspace         = backspace;
-window.moveCursorLeft    = moveCursorLeft;
-window.moveCursorRight   = moveCursorRight;
-window.evaluateExpression= evaluateExpression;
-window.toggleTruthTable  = toggleTruthTable;
-window.quickInsert       = quickInsert;
-window.downloadCSV       = downloadCSV;
+// expose
+window.addToDisplay=addToDisplay;
+window.clearDisplay=clearDisplay;
+window.backspace=backspace;
+window.moveCursorLeft=moveCursorLeft;
+window.moveCursorRight=moveCursorRight;
+window.evaluateExpression=evaluateExpression;
+window.toggleTruthTable=toggleTruthTable;
+window.quickInsert=quickInsert;
+window.downloadCSV=downloadCSV;
