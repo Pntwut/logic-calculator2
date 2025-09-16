@@ -65,6 +65,40 @@ h1 {
   transition: background 0.2s, transform 0.1s;
 }
 
+.button:hover { opacity: 0.9; transform: scale(1.02); }
+
+/* ========== Button Colors ========== */
+.btn-variable { background: #e0f2fe; color: #0369a1; }
+.btn-operator { background: #f3e8ff; color: #6d28d9; }
+.btn-paren    { background: #fef9c3; color: #854d0e; }
+.btn-warn     { background: #fee2e2; color: #b91c1c; }
+.btn-nav      { background: #e0f2fe; color: #0369a1; }
+.btn-equals   { background: #dcfce7; color: #15803d; }
+.btn-toggle   { background: #f1f5f9; color: #111827; }
+.btn-install  { background: #0ea5e9; color: #fff; }
+
+/* ========== Truth Table ========== */
+.truth-table { margin-top: 20px; }
+.table-container { overflow-x: auto; }
+.table-container table { border-collapse: collapse; width: 100%; min-width: 640px; }
+.table-container th, .table-container td {
+  padding: 6px 10px;
+  border: 1px solid #000; /* เส้นกรอบดำทุกช่อง */
+  text-align: center;
+  white-space: nowrap;
+}
+.true  { background: #e7f8ee; color: #15803d; }
+.false { background: #fdecec; color: #b91c1c; }
+
+/* ========== Quick examples ========== */
+.examples { margin: 12px 0; }
+.examples .button { margin: 2px; padding: 6px 10px; font-size: 0.9rem; }
+
+/* ========== Small Screens ========== */
+@media (max-width: 480px) {
+  .button-grid { grid-template-columns: repeat(4, 1fr); }
+}}
+
 .button:hover {
   opacity: 0.9;
   transform: scale(1.02);
@@ -150,3 +184,4 @@ h1 {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
