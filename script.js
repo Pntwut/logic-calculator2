@@ -26,8 +26,11 @@ const isOp = (t) => ['~', '∧', '∨', '→', '↔'].includes(t);
 function normalizeExpr(expr) {
   return expr
     .replace(/\s+/g, '')
+    // IFF
     .replace(/<->|<−>|<—>|<\s*-\s*>/g, '↔')
+    // IMPLIES
     .replace(/->/g, '→')
+    // AND / OR (รูปแบบที่พิมพ์ด้วยคีย์บอร์ด)
     .replace(/\^\^/g, '∧')
     .replace(/\|\|/g, '∨');
 }
@@ -126,34 +129,44 @@ function evalRPN(rpn, env) {
   return st[0];
 }
 
-// ===== NEW: สร้างรายชื่อ "นิพจน์ย่อย" จาก RPN ตามกติกาวงเล็บ =====
+// ===== NEW: สร้างรายชื่อ "นิพจน์ย่อย" จาก RPN พร้อมกติกาวงเล็บ =====
 function extractSubExpressions(rpn) {
   const st = [];
   const subs = []; // เก็บตามลำดับที่สร้าง
+
+  // ต้องใส่วงเล็บไหม (สำหรับใช้กับ →, ↔ และกรณี unary ~)
+  const isVarOrNegVar = (s) => /^~?[pqrs]$/.test(s);
+  const alreadyParen = (s) => s.startsWith('(') && s.endsWith(')');
+  const containsOp = (s) => /[∧∨→↔]/.test(s);
+
+  const needsParenBinarySide = (s) => containsOp(s) && !alreadyParen(s); // ถ้ามีตัวดำเนินการแล้วไม่ล้อมวงเล็บ
+  const wrapIf = (s, cond) => cond(s) ? `(${s})` : s;
 
   for (const t of rpn) {
     if ('pqrs'.includes(t)) {
       st.push(t);
     } else if (t === '~') {
       const a = st.pop();
-      const expr = `~${a}`;
+      // ถ้า operand ไม่ใช่ตัวแปรเดี่ยว/ ~ตัวแปร ให้ใส่วงเล็บ: ~(p∧q)
+      const op = isVarOrNegVar(a) ? a : `(${a})`;
+      const expr = `~${op}`;
       st.push(expr);
       subs.push(expr);
-    } else if (['∧','∨','→','↔'].includes(t)) {
-      const b = st.pop();
-      const a = st.pop();
-      let expr;
-
-      if (t === '∧' || t === '∨') {
-        // ตัวดำเนินการเดี่ยว (binary) แบบพื้นฐาน ไม่ใส่วงเล็บ
-        expr = `${a}${t}${b}`;
-      } else {
-        // →, ↔ หรือโครงสร้างซ้อน: ใส่วงเล็บทั้งก้อน
-        expr = `(${a}${t}${b})`;
-      }
-
+    } else if (t === '∧' || t === '∨') {
+      // ไม่ใส่วงเล็บเกิน: p∧q, (p→q)∧r -> ฝั่งที่เป็น →/↔ จะถูกล้อมเองเพราะเดิมถูกสร้างมาจากขั้นก่อนหน้า
+      const b = st.pop(); const a = st.pop();
+      const expr = `${a}${t}${b}`;
       st.push(expr);
       subs.push(expr);
+    } else if (t === '→' || t === '↔') {
+      const b = st.pop(); const a = st.pop();
+      const A = wrapIf(a, needsParenBinarySide);
+      const B = wrapIf(b, needsParenBinarySide);
+      const expr = `${A}${t}${B}`;
+      st.push(expr);
+      subs.push(expr);
+    } else {
+      throw new Error('RPN token ไม่รู้จัก: ' + t);
     }
   }
 
@@ -305,7 +318,7 @@ function generateTruthTable() {
       }
     }
 
-    // สร้าง header: ตัวแปร -> นิพจน์ย่อย -> (ถ้ายังไม่มี) นิพจน์หลัก
+    // สร้าง header: ตัวแปร -> นิพจน์ย่อย -> นิพจน์หลัก (ถ้ายังไม่ได้ใส่)
     const headerFrag = document.createDocumentFragment();
     vars.forEach(v => {
       const th = document.createElement('th');
@@ -317,19 +330,18 @@ function generateTruthTable() {
       th.textContent = se;
       headerFrag.appendChild(th);
     });
-    // กันพลาด: ถ้านิพจน์หลักยังไม่อยู่ท้าย ให้ใส่เพิ่ม (ปกติจะอยู่ตัวท้ายของ subs แล้ว)
-    if (subCols[subCols.length - 1] !== subs[subs.length - 1]) {
+    const mainPretty = subs[subs.length - 1] || expr;
+    if (subCols[subCols.length - 1] !== mainPretty) {
       const th = document.createElement('th');
-      th.textContent = subs[subs.length - 1] || expr;
+      th.textContent = mainPretty;
       headerFrag.appendChild(th);
     }
     tableHeader.appendChild(headerFrag);
 
-    // เตรียม RPN สำหรับทุกคอลัมน์ย่อย (รวมคอลัมน์สุดท้ายคือหลัก)
+    // เตรียม RPN สำหรับทุกคอลัมน์ย่อย (รวมคอลัมน์หลัก)
     const allExprCols = [...subCols];
-    const mainExprPretty = subs[subs.length - 1] || expr;
-    if (allExprCols[allExprCols.length - 1] !== mainExprPretty) {
-      allExprCols.push(mainExprPretty);
+    if (allExprCols[allExprCols.length - 1] !== mainPretty) {
+      allExprCols.push(mainPretty);
     }
     const rpnMap = new Map();
     allExprCols.forEach(se => {
@@ -352,7 +364,7 @@ function generateTruthTable() {
         tr.appendChild(td);
       });
 
-      // ค่านิพจน์ย่อยทั้งหมด (รวมคอลัมน์นิพจน์หลัก)
+      // ค่านิพจน์ย่อย/หลัก
       allExprCols.forEach(se => {
         const rv = evalRPN(rpnMap.get(se), env);
         const td = document.createElement('td');
