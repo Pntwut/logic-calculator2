@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>เครื่องคิดเลขตรรกศาสตร์</title>
+
+  <!-- Styles & PWA -->
   <link rel="stylesheet" href="./styles.css" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
@@ -25,13 +27,12 @@
           <button class="button" onclick="addToDisplay('r')">r</button>
           <button class="button" onclick="addToDisplay('s')">s</button>
 
-          <!-- Operators -->
+          <!-- Operators (เอา ⊕ ออกแล้ว) -->
           <button class="button" onclick="addToDisplay('∧')">∧</button>
           <button class="button" onclick="addToDisplay('∨')">∨</button>
           <button class="button" onclick="addToDisplay('~')">~</button>
           <button class="button" onclick="addToDisplay('→')">→</button>
           <button class="button" onclick="addToDisplay('↔')">↔</button>
-          <button class="button" onclick="addToDisplay('⊕')">⊕</button>
           <button class="button" onclick="addToDisplay('(')">(</button>
           <button class="button" onclick="addToDisplay(')')">)</button>
 
@@ -43,17 +44,18 @@
           <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
         </div>
 
-        <button class="button btn-toggle" onclick="toggleTruthTable()">
-          <span id="toggleText">เปิดตารางค่าความจริง</span>
-        </button>
-
-        <button class="button btn-install" id="installButton" onclick="installApp()" style="display:none">
-          📱 ติดตั้งแอพ
-        </button>
+        <div class="under-controls">
+          <button class="button btn-toggle" onclick="toggleTruthTable()">
+            <span id="toggleText">เปิดตารางค่าความจริง</span>
+          </button>
+          <button class="button btn-install" id="installButton" onclick="installApp()" style="display:none">
+            📱 ติดตั้งแอพ
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="truth-table" id="truthTable">
+    <div class="truth-table" id="truthTable" style="display:none">
       <h3>ตารางค่าความจริง</h3>
       <div class="table-container">
         <table id="truthTableContent">
@@ -62,8 +64,16 @@
         </table>
       </div>
     </div>
+
+    <!-- Install Help Message -->
+    <div id="installHelp" hidden></div>
   </div>
 
+  <!-- JS -->
+  <script src="./script.js" defer></script>
+  <script src="./pwa.js" defer></script>
+</body>
+</html>
   <!-- Install Help Message -->
   <div id="installHelp" hidden></div>
 
