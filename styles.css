@@ -1,3 +1,4 @@
+ได้ครับ อันนี้อันเดิมครับ
 /* Layout */
 body {
   font-family: "Segoe UI", sans-serif;
@@ -85,10 +86,10 @@ h1 {
   margin-top: 10px;
 }
 
-#truthTableContent th, 
-#truthTableContent td { 
-  border: 1px solid #000; 
-  padding: 6px 10px; 
+#truthTableContent th,
+#truthTableContent td {
+  border: 1px solid #000;
+  padding: 6px 10px;
   text-align: center;
 }
 
@@ -111,5 +112,3 @@ h1 {
   margin-right: 6px;
   margin-bottom: 6px;
 }
-
-
