@@ -3,60 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <title>เครื่องคิดเลขตรรกศาสตร์</title>
-  <meta name="description" content="เครื่องคิดเลขตรรกศาสตร์ พร้อมตารางค่าความจริง และรองรับติดตั้งเป็นแอป (PWA)" />
-
-  <!-- Styles & PWA -->
   <link rel="stylesheet" href="./styles.css" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
   <meta name="theme-color" content="#764ba2" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="LogicCalc" />
 </head>
 <body>
-  <div class="page">
-    <h1><span class="logo">🧮</span> เครื่องคิดเลขตรรกศาสตร์</h1>
+  <div class="container">
+    <h1>🧮 เครื่องคิดเลขตรรกศาสตร์</h1>
 
-    <!-- การ์ดเครื่องคิดเลข -->
-    <div class="calculator">
-      <input type="text" id="display" class="display" placeholder="พิมพ์สูตรตรรกศาสตร์ที่นี่..." autocomplete="off" spellcheck="false" />
-      <div id="resultDisplay" class="result-display" aria-live="polite"></div>
+    <div class="main-container">
+      <div class="calculator">
+        <input type="text" class="display" id="display" placeholder="พิมพ์สูตรตรรกศาสตร์ที่นี่..." />
+        <div class="result-display" id="resultDisplay"></div>
 
-      <div class="button-grid" role="group" aria-label="ปุ่มช่วยพิมพ์">
-        <!-- ตัวแปร -->
-        <button class="button btn-variable" onclick="addToDisplay('p')">p</button>
-        <button class="button btn-variable" onclick="addToDisplay('q')">q</button>
-        <button class="button btn-variable" onclick="addToDisplay('r')">r</button>
-        <button class="button btn-variable" onclick="addToDisplay('s')">s</button>
-        <!-- ตัวดำเนินการ (ไม่มี XOR) -->
-        <button class="button btn-operator" onclick="addToDisplay('∧')" title="AND">∧</button>
-        <button class="button btn-operator" onclick="addToDisplay('∨')" title="OR">∨</button>
-        <button class="button btn-operator" onclick="addToDisplay('~')" title="NOT">~</button>
-        <button class="button btn-operator" onclick="addToDisplay('→')" title="IMPLIES">→</button>
-        <button class="button btn-operator" onclick="addToDisplay('↔')" title="IFF">↔</button>
-        <!-- วงเล็บ -->
-        <button class="button btn-bracket" onclick="addToDisplay('(')">(</button>
-        <button class="button btn-bracket" onclick="addToDisplay(')')">)</button>
-        <!-- คำสั่ง -->
-        <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
-      </div>
+        <div class="button-grid">
+          <!-- Variables -->
+          <button class="button" onclick="addToDisplay('p')">p</button>
+          <button class="button" onclick="addToDisplay('q')">q</button>
+          <button class="button" onclick="addToDisplay('r')">r</button>
+          <button class="button" onclick="addToDisplay('s')">s</button>
 
-      <div class="under-controls">
-        <button class="muted-btn" onclick="toggleTruthTable()"><span id="toggleText">เปิดตารางค่าความจริง</span></button>
-        <button class="muted-btn" onclick="moveCursorLeft()">←</button>
-        <button class="muted-btn" onclick="moveCursorRight()">→</button>
-        <button class="muted-btn" onclick="backspace()">ลบ</button>
-        <button class="muted-btn" onclick="clearDisplay()">ล้าง</button>
-        <button class="muted-btn" id="installButton" onclick="installApp()" style="display:none">📱 ติดตั้งแอพ</button>
-        <button class="button btn-download" onclick="downloadTruthTable()">⬇ ดาวน์โหลดตาราง</button>
+          <!-- Operators -->
+          <button class="button" onclick="addToDisplay('∧')">∧</button>
+          <button class="button" onclick="addToDisplay('∨')">∨</button>
+          <button class="button" onclick="addToDisplay('~')">~</button>
+          <button class="button" onclick="addToDisplay('→')">→</button>
+          <button class="button" onclick="addToDisplay('↔')">↔</button>
+          <button class="button" onclick="addToDisplay('⊕')">⊕</button>
+          <button class="button" onclick="addToDisplay('(')">(</button>
+          <button class="button" onclick="addToDisplay(')')">)</button>
+
+          <!-- Functions -->
+          <button class="button btn-clear" onclick="clearDisplay()">ล้าง</button>
+          <button class="button btn-clear" onclick="backspace()">ลบ</button>
+          <button class="button" onclick="moveCursorLeft()">←</button>
+          <button class="button" onclick="moveCursorRight()">→</button>
+          <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
+        </div>
+
+        <button class="button btn-toggle" onclick="toggleTruthTable()">
+          <span id="toggleText">เปิดตารางค่าความจริง</span>
+        </button>
+
+        <button class="button btn-install" id="installButton" onclick="installApp()" style="display:none">
+          📱 ติดตั้งแอพ
+        </button>
       </div>
     </div>
 
-    <!-- กล่องตาราง -->
-    <div class="truth-box" id="truthTable" aria-live="polite" hidden>
+    <div class="truth-table" id="truthTable">
       <h3>ตารางค่าความจริง</h3>
       <div class="table-container">
         <table id="truthTableContent">
@@ -64,6 +61,16 @@
           <tbody id="tableBody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- Install Help Message -->
+  <div id="installHelp" hidden></div>
+
+  <script src="./script.js" defer></script>
+  <script src="./pwa.js" defer></script>
+</body>
+</html>      </div>
     </div>
   </div>
 
