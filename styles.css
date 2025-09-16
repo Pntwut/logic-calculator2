@@ -1,42 +1,152 @@
-/* โครงหน้า */
-.container { max-width: 900px; margin: auto; padding: 20px; }
-.button-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
-.button { padding: 12px; font-size: 1.05rem; border-radius: 12px; border: 1px solid #e5e7eb; cursor: pointer; }
-
-/* สีปุ่มตามบทบาท */
-.btn-variable { background:#1e88e5; color:#fff; }
-.btn-operator  { background:#e74c3c; color:#fff; }
-.btn-paren     { background:#f39c12; color:#fff; }
-.btn-nav       { background:#8e44ad; color:#fff; }
-.btn-warn      { background:#f39c12; color:#fff; }
-.btn-equals    { background:#2ecc71; color:#fff; font-weight:700; }
-.btn-toggle    { background:#334155; color:#fff; }
-.btn-install   { background:#0ea5e9; color:#fff; }
-
-/* โฮเวอร์/กด */
-.button:hover{ opacity:.95; }
-.button:active{ transform: translateY(1px); }
-
-/* กล่องผลลัพธ์ */
-.result-display.show {
-  margin-top: 8px; padding: 10px 12px; border-radius: 10px;
-  background:#e8f5e9; border:1px solid #c8e6c9;
+/* ========== Layout ========== */
+body {
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  margin: 0;
+  background: #f9fafb;
+  color: #111827;
 }
 
-/* ตารางค่าความจริง: เส้นขอบดำ */
-.table-container { overflow-x:auto; margin-top: 16px; }
-.table-container table { width:100%; border-collapse: collapse; }
-.table-container th, .table-container td {
-  border:1px solid #000; padding:8px 10px; text-align:center; white-space:nowrap;
+.container {
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+  text-align: center;
 }
-.true  { background:#e7f8ee; color:#15803d; }
-.false { background:#fdecec; color:#b91c1c; }
 
-/* install help box */
-#installHelp { margin-top:12px; padding:10px; border-radius:10px; background:#f8fafc; border:1px solid #e5e7eb; }
+h1 {
+  margin-bottom: 16px;
+  color: #4f46e5;
+}
 
-/* มือถือ */
+.main-container {
+  display: flex;
+  justify-content: center;
+}
+
+.calculator {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 600px;
+}
+
+.display {
+  width: 100%;
+  padding: 10px;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.result-display {
+  font-size: 1rem;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+/* ========== Buttons Grid ========== */
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.button {
+  padding: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.button:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+/* ========== Button Colors ========== */
+.btn-variable {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.btn-operator {
+  background: #f3e8ff;
+  color: #6d28d9;
+}
+
+.btn-paren {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.btn-warn {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.btn-nav {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.btn-equals {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.btn-toggle {
+  background: #f1f5f9;
+  color: #111827;
+}
+
+.btn-install {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+/* ========== Truth Table ========== */
+.truth-table {
+  margin-top: 20px;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.table-container table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 640px;
+}
+
+.table-container th,
+.table-container td {
+  padding: 6px 10px;
+  border: 1px solid #000; /* เส้นกรอบสีดำ */
+  text-align: center;
+  white-space: nowrap;
+}
+
+.true {
+  background: #e7f8ee;
+  color: #15803d;
+}
+
+.false {
+  background: #fdecec;
+  color: #b91c1c;
+}
+
+/* ========== Small Screens ========== */
 @media (max-width: 480px) {
-  .button { min-width:44px; min-height:44px; }
-  h1 { font-size: 1.25rem; }
+  .button-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
