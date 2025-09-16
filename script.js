@@ -1,69 +1,295 @@
-/* ===== Logic Calculator + Subexpression Columns ===== */
+/* ===== Logic Calculator with Subexpression Columns ===== */
+
 let currentExpression = "";
 let cursorPosition = 0;
 let truthTableVisible = false;
 
-/* DOM helpers */
-const $ = s => document.querySelector(s);
+/* ===== DOM Helpers ===== */
+const $ = (s) => document.querySelector(s);
 const displayEl = () => $("#display");
 const resultEl  = () => $("#resultDisplay");
-const tHead     = () => $("#tableHeader");
-const tBody     = () => $("#tableBody");
+const headEl    = () => $("#tableHeader");
+const bodyEl    = () => $("#tableBody");
 
-/* UI */
-function updateDisplay(){
-  const el = displayEl(); if(!el) return;
+/* ===== Basic UI Handlers ===== */
+function updateDisplay() {
+  const el = displayEl(); if (!el) return;
   el.value = currentExpression;
   el.setSelectionRange(cursorPosition, cursorPosition);
   el.focus();
 }
-function addToDisplay(v){
-  currentExpression = currentExpression.slice(0, cursorPosition) + v + currentExpression.slice(cursorPosition);
-  cursorPosition += v.length;
+function addToDisplay(val) {
+  const left  = currentExpression.slice(0, cursorPosition);
+  const right = currentExpression.slice(cursorPosition);
+  currentExpression = left + val + right;
+  cursorPosition += val.length;
   updateDisplay();
   if (truthTableVisible) generateTruthTable();
 }
-function clearDisplay(){ currentExpression=""; cursorPosition=0; updateDisplay(); hideResult(); if(truthTableVisible) generateTruthTable(); }
-function backspace(){ if(cursorPosition>0){ currentExpression=currentExpression.slice(0,cursorPosition-1)+currentExpression.slice(cursorPosition); cursorPosition--; updateDisplay(); if(truthTableVisible) generateTruthTable(); } }
-function moveCursorLeft(){ if(cursorPosition>0){ cursorPosition--; updateDisplay(); } }
-function moveCursorRight(){ if(cursorPosition<currentExpression.length){ cursorPosition++; updateDisplay(); } }
-function showResult(html){ const el=resultEl(); if(!el) return; el.innerHTML=html; el.classList.add("show"); }
-function hideResult(){ const el=resultEl(); if(!el) return; el.innerHTML=""; el.classList.remove("show"); }
+function clearDisplay() {
+  currentExpression = "";
+  cursorPosition = 0;
+  updateDisplay();
+  hideResult();
+  if (truthTableVisible) generateTruthTable();
+}
+function backspace() {
+  if (cursorPosition <= 0) return;
+  currentExpression = currentExpression.slice(0, cursorPosition - 1) + currentExpression.slice(cursorPosition);
+  cursorPosition -= 1;
+  updateDisplay();
+  if (truthTableVisible) generateTruthTable();
+}
+function moveCursorLeft()  { if (cursorPosition > 0) { cursorPosition--; updateDisplay(); } }
+function moveCursorRight() { if (cursorPosition < currentExpression.length) { cursorPosition++; updateDisplay(); } }
 
-/* Logic helpers */
-function extractVariables(expr){ const m=expr.match(/[pqrs]/g)||[]; return [...new Set(m)].sort(); }
-function containsOperator(expr){ return /[~∧∨→↔]/.test(expr); }
+function showResult(html) { const el = resultEl(); if (!el) return; el.innerHTML = html; el.classList.add("show"); }
+function hideResult()      { const el = resultEl(); if (!el) return; el.innerHTML = "";  el.classList.remove("show"); }
 
-function evalNext(expr){
-  if(/~[TF]/.test(expr)) return expr.replace(/~([TF])/g,(_,a)=>a==="T"?"F":"T");
-  if(/[TF]\s*∧\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*∧\s*([TF])/g,(_,a,b)=>a==="T"&&b==="T"?"T":"F");
-  if(/[TF]\s*∨\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*∨\s*([TF])/g,(_,a,b)=>a==="T"||b==="T"?"T":"F");
-  if(/[TF]\s*→\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*→\s*([TF])/g,(_,a,b)=>a==="F"||b==="T"?"T":"F");
-  if(/[TF]\s*↔\s*[TF]/.test(expr)) return expr.replace(/([TF])\s*↔\s*([TF])/g,(_,a,b)=>a===b?"T":"F");
+/* ===== Logic Core ===== */
+function extractVariables(expr) {
+  const m = expr.match(/[pqrs]/g) || [];
+  return [...new Set(m)].sort(); // p,q,r,s
+}
+function containsOperator(expr) {
+  // เฉพาะ ~ ∧ ∨ → ↔
+  return /[~∧∨→↔]/.test(expr);
+}
+function stepEval(expr) {
+  // ลำดับ: ~ > ∧ > ∨ > → > ↔
+  if (/~[TF]/.test(expr)) {
+    return expr.replace(/~([TF])/g, (_, a) => (a === "T" ? "F" : "T"));
+  }
+  if (/[TF]\s*∧\s*[TF]/.test(expr)) {
+    return expr.replace(/([TF])\s*∧\s*([TF])/g, (_, a, b) => (a === "T" && b === "T") ? "T" : "F");
+  }
+  if (/[TF]\s*∨\s*[TF]/.test(expr)) {
+    return expr.replace(/([TF])\s*∨\s*([TF])/g, (_, a, b) => (a === "T" || b === "T") ? "T" : "F");
+  }
+  if (/[TF]\s*→\s*[TF]/.test(expr)) {
+    return expr.replace(/([TF])\s*→\s*([TF])/g, (_, a, b) => (a === "F" || b === "T") ? "T" : "F");
+  }
+  if (/[TF]\s*↔\s*[TF]/.test(expr)) {
+    return expr.replace(/([TF])\s*↔\s*([TF])/g, (_, a, b) => (a === b) ? "T" : "F");
+  }
   return expr;
 }
-function evaluateSimpleTF(expr){
-  let cur=expr, guard=0;
-  while(containsOperator(cur) && guard++<50){
-    const next=evalNext(cur); if(next===cur) break; cur=next;
+function reduceTF(expr) {
+  // expr ประกอบด้วย T/F + ตัวดำเนินการ
+  let cur = expr, guard = 0;
+  while (containsOperator(cur) && guard++ < 100) {
+    const next = stepEval(cur);
+    if (next === cur) break;
+    cur = next;
   }
-  return cur==="T";
+  return cur === "T";
 }
-function evaluateWithValues(expression, values){
-  let cur=expression;
-  for(const [v,val] of Object.entries(values)){ cur = cur.replace(new RegExp(v,"g"), val?"T":"F"); }
-  let i=0;
-  while(/\([^()]*\)/.test(cur) && i++<50){
-    cur = cur.replace(/\([^()]*\)/g, m => evaluateSimpleTF(m.slice(1,-1)) ? "T":"F");
+function evaluateWithValues(expression, values) {
+  let cur = expression;
+  for (const [v, val] of Object.entries(values)) {
+    cur = cur.replace(new RegExp(v, "g"), val ? "T" : "F");
   }
-  return evaluateSimpleTF(cur);
+  let i = 0;
+  while (/\([^()]*\)/.test(cur) && i++ < 100) {
+    cur = cur.replace(/\([^()]*\)/g, m => reduceTF(m.slice(1, -1)) ? "T" : "F");
+  }
+  return reduceTF(cur);
 }
 
-/* นิพจน์ย่อย */
-function getSubExpressions(expression){
+/* ===== Subexpression Discovery ===== */
+function getSubExpressions(expr) {
   const out = new Set();
+  const vars = extractVariables(expr);
 
-  // 1) ตัวแปร
+  // ตัวแปรเดี่ยว
+  vars.forEach(v => out.add(v));
+
+  // ~ตัวแปร
+  (expr.match(/~[pqrs]/g) || []).forEach(x => out.add(x));
+
+  // เนื้อหาในวงเล็บ
+  const inner = /\(([^\(\)]+)\)/g; let m;
+  while ((m = inner.exec(expr)) !== null) out.add(m[1].trim());
+
+  // ~(...)
+  (expr.match(/~\([^\(\)]+\)/g) || []).forEach(x => out.add(x));
+
+  // term op term (หลายรอบเพื่อเก็บชิ้นใหญ่ขึ้น)
+  const term = '(?:~\\([^)]+\\)|\\([^()]+\\)|~?[pqrs])';
+  const ops  = '(?:∧|∨|→|↔)';
+  const bin  = new RegExp(`${term}\\s*${ops}\\s*${term}`, 'g');
+  for (let i = 0; i < 4; i++) {
+    let mm;
+    while ((mm = bin.exec(expr)) !== null) out.add(mm[0].replace(/\s+/g, ''));
+  }
+
+  const subExprs = [...out].filter(x => !vars.includes(x) && x !== expr).sort((a, b) => a.length - b.length);
+  return { variables: vars, subExprs, full: expr };
+}
+
+/* ===== Truth Table ===== */
+function generateTruthTable() {
+  const expr = (currentExpression || "").trim();
+  const thead = headEl(), tbody = bodyEl();
+  if (!thead || !tbody) return;
+
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+  if (!expr) return;
+
+  const { variables, subExprs, full } = getSubExpressions(expr);
+  if (variables.length === 0) return;
+
+  // หัวคอลัมน์: ตัวแปร -> นิพจน์ย่อย -> นิพจน์เต็ม
+  [...variables, ...subExprs, full].forEach(label => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    thead.appendChild(th);
+  });
+
+  const n = variables.length;
+  const rows = 2 ** n;
+
+  for (let i = rows - 1; i >= 0; i--) {
+    const tr = document.createElement("tr");
+    const values = {};
+
+    // ค่า T/F ให้ตัวแปร
+    variables.forEach((v, j) => {
+      const val = Boolean(i & (1 << (n - 1 - j)));
+      values[v] = val;
+      const td = document.createElement("td");
+      td.textContent = val ? "T" : "F";
+      td.className = val ? "true" : "false";
+      tr.appendChild(td);
+    });
+
+    // คำนวณนิพจน์ย่อย
+    subExprs.forEach(se => {
+      const td = document.createElement("td");
+      const res = evaluateWithValues(se, values);
+      td.textContent = res ? "T" : "F";
+      td.className = res ? "true" : "false";
+      tr.appendChild(td);
+    });
+
+    // นิพจน์เต็ม
+    const td = document.createElement("td");
+    const res = evaluateWithValues(full, values);
+    td.textContent = res ? "T" : "F";
+    td.className = res ? "true" : "false";
+      tr.appendChild(td);
+
+    tbody.appendChild(tr);
+  }
+}
+
+/* ===== Evaluate (Tautology) ===== */
+function evaluateExpression() {
+  const expr = (currentExpression || "").trim();
+  if (!expr) return;
+
+  const vars = extractVariables(expr);
+  if (vars.length === 0) {
+    showResult('<span style="color:#e11d48">ไม่พบตัวแปรในสูตร</span>');
+    return;
+  }
+
+  let isTautology = true;
+  const rows = 2 ** vars.length;
+
+  for (let i = 0; i < rows; i++) {
+    const values = {};
+    for (let j = 0; j < vars.length; j++) {
+      values[vars[j]] = Boolean(i & (1 << (vars.length - 1 - j)));
+    }
+    if (!evaluateWithValues(expr, values)) { isTautology = false; break; }
+  }
+
+  showResult(
+    `<div><strong>สูตร:</strong> ${expr}</div>
+     <div><strong>ตัวแปร:</strong> ${vars.join(", ")}</div>
+     <div><strong>สถานะ:</strong> <span style="color:${isTautology ? "#16a34a" : "#e11d48"}">
+       ${isTautology ? "เป็นสัจนิรันดร์" : "ไม่เป็นสัจนิรันดร์"}
+     </span></div>`
+  );
+
+  if (truthTableVisible) generateTruthTable();
+}
+
+/* ===== Toggle Table ===== */
+function toggleTruthTable() {
+  truthTableVisible = !truthTableVisible;
+  const box = $("#truthTable");
+  const txt = $("#toggleText");
+  if (!box || !txt) return;
+
+  if (truthTableVisible) {
+    box.style.display = "block";
+    txt.textContent = "ปิดตารางค่าความจริง";
+    generateTruthTable();
+  } else {
+    box.style.display = "none";
+    txt.textContent = "เปิดตารางค่าความจริง";
+  }
+}
+
+/* ===== Quick Insert Example ===== */
+function quickInsert(expr) {
+  currentExpression = expr;
+  cursorPosition = expr.length;
+  updateDisplay();
+  if (truthTableVisible) generateTruthTable();
+}
+window.quickInsert = quickInsert;
+
+/* ===== Download Truth Table as CSV ===== */
+function downloadCSV() {
+  const table = document.querySelector("#truthTableContent");
+  if (!table) return;
+
+  let csv = [];
+  for (const row of table.rows) {
+    const cols = [...row.cells].map(td => `"${td.textContent}"`);
+    csv.push(cols.join(","));
+  }
+  const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "truth-table.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+window.downloadCSV = downloadCSV;
+
+/* ===== Input Events ===== */
+document.addEventListener("DOMContentLoaded", () => {
+  const input = displayEl(); if (!input) return;
+  currentExpression = input.value || "";
+  cursorPosition = currentExpression.length;
+
+  input.addEventListener("input", function () {
+    currentExpression = this.value;
+    cursorPosition = this.selectionStart || currentExpression.length;
+    if (truthTableVisible) generateTruthTable();
+  });
+  input.addEventListener("click", function () {
+    cursorPosition = this.selectionStart || 0;
+  });
+  input.addEventListener("keyup", function () {
+    cursorPosition = this.selectionStart || 0;
+  });
+});
+
+/* ===== Export for inline buttons ===== */
+window.addToDisplay = addToDisplay;
+window.clearDisplay = clearDisplay;
+window.backspace = backspace;
+window.moveCursorLeft = moveCursorLeft;
+window.moveCursorRight = moveCursorRight;
+window.evaluateExpression = evaluateExpression;
+window.toggleTruthTable = toggleTruthTable;  // 1) ตัวแปร
   const vars = extractVariables(expression);
   vars.forEach(v=>out.add(v));
 
@@ -337,5 +563,6 @@ window.moveCursorRight=moveCursorRight;
 window.evaluateExpression=evaluateExpression;
 window.toggleTruthTable=toggleTruthTable;
 window.downloadTruthTable=downloadTruthTable;
+
 
 
