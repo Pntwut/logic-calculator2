@@ -22,25 +22,27 @@
 
         <div class="button-grid">
           <!-- Variables -->
-          <button class="button" onclick="addToDisplay('p')">p</button>
-          <button class="button" onclick="addToDisplay('q')">q</button>
-          <button class="button" onclick="addToDisplay('r')">r</button>
-          <button class="button" onclick="addToDisplay('s')">s</button>
+          <button class="button btn-variable" onclick="addToDisplay('p')">p</button>
+          <button class="button btn-variable" onclick="addToDisplay('q')">q</button>
+          <button class="button btn-variable" onclick="addToDisplay('r')">r</button>
+          <button class="button btn-variable" onclick="addToDisplay('s')">s</button>
 
-          <!-- Operators (เอา ⊕ ออกแล้ว) -->
-          <button class="button" onclick="addToDisplay('∧')">∧</button>
-          <button class="button" onclick="addToDisplay('∨')">∨</button>
-          <button class="button" onclick="addToDisplay('~')">~</button>
-          <button class="button" onclick="addToDisplay('→')">→</button>
-          <button class="button" onclick="addToDisplay('↔')">↔</button>
-          <button class="button" onclick="addToDisplay('(')">(</button>
-          <button class="button" onclick="addToDisplay(')')">)</button>
+          <!-- Operators -->
+          <button class="button btn-operator" onclick="addToDisplay('∧')">∧</button>
+          <button class="button btn-operator" onclick="addToDisplay('∨')">∨</button>
+          <button class="button btn-operator" onclick="addToDisplay('~')">~</button>
+          <button class="button btn-operator" onclick="addToDisplay('→')">→</button>
+          <button class="button btn-operator" onclick="addToDisplay('↔')">↔</button>
 
-          <!-- Functions -->
-          <button class="button btn-clear" onclick="clearDisplay()">ล้าง</button>
-          <button class="button btn-clear" onclick="backspace()">ลบ</button>
-          <button class="button" onclick="moveCursorLeft()">←</button>
-          <button class="button" onclick="moveCursorRight()">→</button>
+          <!-- Parentheses -->
+          <button class="button btn-paren" onclick="addToDisplay('(')">(</button>
+          <button class="button btn-paren" onclick="addToDisplay(')')">)</button>
+
+          <!-- Actions -->
+          <button class="button btn-warn" onclick="clearDisplay()">ล้าง</button>
+          <button class="button btn-warn" onclick="backspace()">ลบ</button>
+          <button class="button btn-nav" onclick="moveCursorLeft()">←</button>
+          <button class="button btn-nav" onclick="moveCursorRight()">→</button>
           <button class="button btn-equals" onclick="evaluateExpression()">= แสดงผล</button>
         </div>
 
@@ -64,6 +66,16 @@
         </table>
       </div>
     </div>
+
+    <!-- ข้อความช่วยติดตั้ง (จะแสดงอัตโนมัติเมื่อ install prompt ใช้ไม่ได้) -->
+    <div id="installHelp" hidden></div>
+  </div>
+
+  <!-- JS -->
+  <script src="./script.js" defer></script>
+  <script src="./pwa.js" defer></script>
+</body>
+</html>    </div>
 
     <!-- Install Help Message -->
     <div id="installHelp" hidden></div>
