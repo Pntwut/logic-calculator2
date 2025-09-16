@@ -22,7 +22,7 @@ const isOp = (t) => ['~', '∧', '∨', '→', '↔'].includes(t);
 
 // ===== Expression helpers =====
 
-// ตัดช่องว่าง + normalize ให้เป็นสัญลักษณ์มาตรฐาน
+// ตัดช่องว่าง + normalize ให้เป็นสัญลักษณ์มาตรฐาน (ไม่แตะต้องวงเล็บ)
 function normalizeExpr(expr) {
   return expr
     .replace(/\s+/g, '')
@@ -30,7 +30,7 @@ function normalizeExpr(expr) {
     .replace(/<->|<−>|<—>|<\s*-\s*>/g, '↔')
     // IMPLIES
     .replace(/->/g, '→')
-    // AND / OR (รูปแบบที่พิมพ์ด้วยคีย์บอร์ด)
+    // AND / OR (แบบคีย์บอร์ด)
     .replace(/\^\^/g, '∧')
     .replace(/\|\|/g, '∨');
 }
@@ -129,53 +129,112 @@ function evalRPN(rpn, env) {
   return st[0];
 }
 
-// ===== NEW: สร้างรายชื่อ "นิพจน์ย่อย" จาก RPN พร้อมกติกาวงเล็บ =====
-function extractSubExpressions(rpn) {
-  const st = [];
-  const subs = []; // เก็บตามลำดับที่สร้าง
+// ===== NEW (สำคัญ): Parser ที่ “รักษาวงเล็บตามที่ผู้ใช้พิมพ์” =====
+// ใช้ recursive-descent สร้าง AST โดยเก็บช่วง index start..end (exclusive)
+// แล้วใช้ slice กับนิพจน์ที่ normalize แล้วเพื่อให้หัวตารางตรงตามที่พิมพ์จริง
+function buildAstWithSpans(expr) {
+  let i = 0;
 
-  // ต้องใส่วงเล็บไหม (สำหรับใช้กับ →, ↔ และกรณี unary ~)
-  const isVarOrNegVar = (s) => /^~?[pqrs]$/.test(s);
-  const alreadyParen = (s) => s.startsWith('(') && s.endsWith(')');
-  const containsOp = (s) => /[∧∨→↔]/.test(s);
+  const peek = () => expr[i];
+  const eat = (ch) => {
+    if (expr[i] === ch) { i++; return true; }
+    return false;
+  };
+  const expect = (ch) => {
+    if (!eat(ch)) throw new Error(`คาดว่าเป็น '${ch}' ที่ index ${i}`);
+  };
 
-  const needsParenBinarySide = (s) => containsOp(s) && !alreadyParen(s); // ถ้ามีตัวดำเนินการแล้วไม่ล้อมวงเล็บ
-  const wrapIf = (s, cond) => cond(s) ? `(${s})` : s;
-
-  for (const t of rpn) {
-    if ('pqrs'.includes(t)) {
-      st.push(t);
-    } else if (t === '~') {
-      const a = st.pop();
-      // ถ้า operand ไม่ใช่ตัวแปรเดี่ยว/ ~ตัวแปร ให้ใส่วงเล็บ: ~(p∧q)
-      const op = isVarOrNegVar(a) ? a : `(${a})`;
-      const expr = `~${op}`;
-      st.push(expr);
-      subs.push(expr);
-    } else if (t === '∧' || t === '∨') {
-      // ไม่ใส่วงเล็บเกิน: p∧q, (p→q)∧r -> ฝั่งที่เป็น →/↔ จะถูกล้อมเองเพราะเดิมถูกสร้างมาจากขั้นก่อนหน้า
-      const b = st.pop(); const a = st.pop();
-      const expr = `${a}${t}${b}`;
-      st.push(expr);
-      subs.push(expr);
-    } else if (t === '→' || t === '↔') {
-      const b = st.pop(); const a = st.pop();
-      const A = wrapIf(a, needsParenBinarySide);
-      const B = wrapIf(b, needsParenBinarySide);
-      const expr = `${A}${t}${B}`;
-      st.push(expr);
-      subs.push(expr);
-    } else {
-      throw new Error('RPN token ไม่รู้จัก: ' + t);
-    }
+  function node(start, end, kind, left = null, right = null) {
+    return { start, end, kind, left, right };
   }
 
-  return subs;
+  // precedence: ↔ < → < ∨ < ∧ < unary ~
+  function parseEquiv() {
+    let n = parseImplies();
+    while (peek() === '↔') {
+      const opStart = i; eat('↔');
+      const r = parseImplies();
+      n = node(n.start, r.end, '↔', n, r);
+    }
+    return n;
+  }
+
+  function parseImplies() {
+    let n = parseOr();
+    while (peek() === '→') {
+      const opStart = i; eat('→');
+      const r = parseOr();
+      n = node(n.start, r.end, '→', n, r);
+    }
+    return n;
+  }
+
+  function parseOr() {
+    let n = parseAnd();
+    while (peek() === '∨') {
+      const opStart = i; eat('∨');
+      const r = parseAnd();
+      n = node(n.start, r.end, '∨', n, r);
+    }
+    return n;
+  }
+
+  function parseAnd() {
+    let n = parseUnary();
+    while (peek() === '∧') {
+      const opStart = i; eat('∧');
+      const r = parseUnary();
+      n = node(n.start, r.end, '∧', n, r);
+    }
+    return n;
+  }
+
+  function parseUnary() {
+    if (peek() === '~') {
+      const s = i; eat('~');
+      const r = parseUnary();
+      return node(s, r.end, '~', r, null);
+    }
+    return parsePrimary();
+  }
+
+  function parsePrimary() {
+    if (eat('(')) {
+      const s = i - 1; // รวม '('
+      const inside = parseEquiv();
+      expect(')');
+      const e = i;     // รวม ')'
+      // โหนดครอบวงเล็บทั้งก้อน
+      return node(s, e, '()', inside, null);
+    }
+    const ch = peek();
+    if ('pqrs'.includes(ch)) {
+      const s = i; i++;
+      return node(s, i, 'var', null, null);
+    }
+    throw new Error(`ตัวอักษรไม่ถูกต้องที่ index ${i}`);
+  }
+
+  const root = parseEquiv();
+  if (i !== expr.length) throw new Error('วิเคราะห์นิพจน์ไม่ครบทั้งสตริง');
+  return root;
+}
+
+// เก็บ “นิพจน์ย่อย” ตามที่พิมพ์จริง จาก AST (post-order)
+function collectSubExprFromAst(ast, expr) {
+  const list = [];
+  (function dfs(n) {
+    if (!n) return;
+    dfs(n.left);
+    dfs(n.right);
+    if (n.kind !== 'var') {
+      list.push(expr.slice(n.start, n.end)); // ตัดตามช่วงจริง
+    }
+  })(ast);
+  return list;
 }
 
 // ===== UI actions =====
-
-// แทรกข้อความลงช่อง input ตามตำแหน่งเคอร์เซอร์
 function addToDisplay(value) {
   const display = $('display');
   const start = display.selectionStart ?? display.value.length;
@@ -218,7 +277,6 @@ function moveCursorRight() {
   d.setSelectionRange(s, s); d.focus();
 }
 
-// ใส่สูตรตัวอย่าง
 function quickInsert(expr) {
   const d = $('display');
   d.value = expr;
@@ -228,7 +286,6 @@ function quickInsert(expr) {
   }
 }
 
-// กด "=" ประเมิน & แสดงสรุป (และอัปเดตตารางถ้าเปิดอยู่)
 function evaluateExpression() {
   const raw = $('display').value;
   const resultDisplay = $('resultDisplay');
@@ -274,7 +331,6 @@ function evaluateExpression() {
   }
 }
 
-// เปิด/ปิดตาราง
 function toggleTruthTable() {
   const box = $('truthTable');
   const text = $('toggleText');
@@ -288,7 +344,7 @@ function toggleTruthTable() {
   }
 }
 
-// ===== สร้างตารางค่าความจริง (ตัวแปร + นิพจน์ย่อย + นิพจน์หลัก) =====
+// ===== สร้างตารางค่าความจริง (หัวคอลัมน์ตาม “ที่พิมพ์จริง”) =====
 function generateTruthTable() {
   const raw = $('display').value;
   const tableHeader = $('tableHeader');
@@ -302,23 +358,23 @@ function generateTruthTable() {
     const vars = extractVariables(expr);
     if (vars.length === 0) return;
 
-    // เตรียม RPN ของ "นิพจน์หลัก"
-    const mainRPN = toRPN(tokenize(expr));
+    // 1) สร้าง AST ที่คงวงเล็บตามผู้ใช้
+    const ast = buildAstWithSpans(expr);
 
-    // ดึงรายชื่อ "นิพจน์ย่อย" ตามกติกาวงเล็บ
-    const subs = extractSubExpressions(mainRPN); // ลำดับ: จากย่อยไปใหญ่สุด (ตัวสุดท้ายคือนิพจน์หลัก)
+    // 2) ดึง “นิพจน์ย่อย” ตามที่พิมพ์จริง (post-order)
+    const subList = collectSubExprFromAst(ast, expr); // ตัวท้ายคือทั้งนิพจน์ (รวมวงเล็บถ้ามี)
 
-    // เอาเฉพาะคอลัมน์ย่อยที่ "ไม่ซ้ำ" และ "ไม่ใช่ตัวแปรล้วน"
+    // 3) กรองไม่ให้ซ้ำ + ไม่เอาคอลัมน์ที่เป็นตัวแปรเดี่ยว
     const seen = new Set();
     const subCols = [];
-    for (const s of subs) {
+    for (const s of subList) {
       if (!seen.has(s) && !/^[pqrs]$/.test(s)) {
         seen.add(s);
         subCols.push(s);
       }
     }
 
-    // สร้าง header: ตัวแปร -> นิพจน์ย่อย -> นิพจน์หลัก (ถ้ายังไม่ได้ใส่)
+    // 4) header: ตัวแปร -> นิพจน์ย่อย (ตามลำดับ parse) -> (กันพลาด) นิพจน์หลัก
     const headerFrag = document.createDocumentFragment();
     vars.forEach(v => {
       const th = document.createElement('th');
@@ -330,25 +386,25 @@ function generateTruthTable() {
       th.textContent = se;
       headerFrag.appendChild(th);
     });
-    const mainPretty = subs[subs.length - 1] || expr;
-    if (subCols[subCols.length - 1] !== mainPretty) {
+    const mainPretty = subCols.length ? subCols[subCols.length - 1] : expr;
+    if (mainPretty !== expr) {
+      // กรณีสุดท้ายของ subCols ไม่ตรงกับนิพจน์เต็ม ให้ต่อท้ายเป็นนิพจน์เต็ม
       const th = document.createElement('th');
-      th.textContent = mainPretty;
+      th.textContent = expr;
       headerFrag.appendChild(th);
     }
     tableHeader.appendChild(headerFrag);
 
-    // เตรียม RPN สำหรับทุกคอลัมน์ย่อย (รวมคอลัมน์หลัก)
+    // 5) เตรียม RPN ของทุกคอลัมน์นิพจน์ (ย่อยทั้งหมด + นิพจน์เต็ม)
     const allExprCols = [...subCols];
-    if (allExprCols[allExprCols.length - 1] !== mainPretty) {
-      allExprCols.push(mainPretty);
-    }
+    if (allExprCols[allExprCols.length - 1] !== expr) allExprCols.push(expr);
+
     const rpnMap = new Map();
     allExprCols.forEach(se => {
       rpnMap.set(se, toRPN(tokenize(normalizeExpr(se))));
     });
 
-    // สร้างบรรทัดข้อมูล (เรียงจาก T..F เหมือนปกติ)
+    // 6) วาดตารางข้อมูล (เรียงจาก T..F)
     const rows = 1 << vars.length;
     for (let i = rows - 1; i >= 0; i--) {
       const env = {};
@@ -364,7 +420,7 @@ function generateTruthTable() {
         tr.appendChild(td);
       });
 
-      // ค่านิพจน์ย่อย/หลัก
+      // ค่านิพจน์ย่อย + นิพจน์หลัก
       allExprCols.forEach(se => {
         const rv = evalRPN(rpnMap.get(se), env);
         const td = document.createElement('td');
@@ -386,7 +442,7 @@ function generateTruthTable() {
   }
 }
 
-// ดาวน์โหลด CSV จากตารางปัจจุบัน
+// ดาวน์โหลด CSV
 function downloadCSV() {
   const table = document.getElementById('truthTableContent');
   if (!table) return;
@@ -409,7 +465,7 @@ function downloadCSV() {
   URL.revokeObjectURL(url);
 }
 
-// ===== expose to window (สำหรับ inline onclick) =====
+// ===== expose =====
 window.addToDisplay = addToDisplay;
 window.clearDisplay = clearDisplay;
 window.backspace = backspace;
