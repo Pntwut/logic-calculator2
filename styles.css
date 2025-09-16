@@ -85,8 +85,9 @@ h1 {
   margin-top: 10px;
 }
 
+/* ✅ เพิ่มสีหัวตาราง */
 #truthTableContent th {
-  background: #444;       /* ดำกลาง */
+  background: #444;       /* ดำกลาง ไม่เข้มเกินไป */
   color: #fff;            /* ตัวอักษรสีขาว */
   padding: 8px 12px;
   font-weight: bold;
