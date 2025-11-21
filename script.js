@@ -180,7 +180,7 @@ function evaluateExpression() {
   const raw = $('display').value, resultDisplay = $('resultDisplay');
   try {
     const expr = normalizeExpr(raw), vars = extractVariables(expr);
-    if (!vars.length) return resultDisplay.innerHTML = `<span class="error">ไม่พบตัวแปร</span>`;
+    if (!vars.length) return resultDisplay.innerHTML = `<span class="error">ไม่พบประพจน์</span>`;
     const rpn = toRPN(tokenize(expr));
     let tautology = true, rows = 1 << vars.length;
     for (let i = 0; i < rows; i++) {
@@ -248,3 +248,4 @@ window.evaluateExpression = evaluateExpression;
 window.toggleTruthTable = toggleTruthTable;
 window.quickInsert = quickInsert;
 window.downloadCSV = downloadCSV;
+
